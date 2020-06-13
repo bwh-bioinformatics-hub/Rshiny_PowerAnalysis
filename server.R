@@ -2,6 +2,7 @@ library(shiny)
 library(devtools)
 library('powerEQTL') 
 library(dplyr)
+library(ggplot2)
 
 
 powerEQTL=function(MAF, 
@@ -96,6 +97,10 @@ function(input, output) {
          input$rho
     })
     
+    # #observe Events
+    # vals <- reactiveValues()
+    # observeEvent(input$plot_click)
+    
     # single-cell eQTL
     sc.data <- reactive({
         power_sc_eQTL <- array(numeric(len*mafLen.data()), dim=c(len,mafLen.data()), dimnames = list(as.character(deltaVec), as.character(mafVec.data())))
@@ -137,7 +142,14 @@ function(input, output) {
     })
     
     output$cell_info <- renderText({
-        paste0("eQTL effect size = ", input$plot_click$x, "\nPower(%) = ", input$plot_click$y)
+        # nearPoints(sc.data, input$plot_click) %>%
+        #     transmute(
+        #         probe,
+        #         gene = HUGO.gene.symbol,
+        #         `eQTL effect size = ` = signif(deltaVec, digits = 2),
+        #         `Power(%) = ` = signif(power_sc_eQTL, digits = 2)
+        #     )
+        paste0("eQTL effect size = ", input$cpoint$x, "\nPower(%) = ", input$cpoint$y)
     })
     
     # tissue eQTL
@@ -164,7 +176,7 @@ function(input, output) {
              xlab="MAF (%)",
              ylab="Power",
              main= title)
-        mtext(paste("p = ", input$alpha1, " (one-way unbalanced ANOVA)", sep = ""),3)
+        mtext(paste("eQTL p-value = ", input$alpha1, " (one-way unbalanced ANOVA)", sep = ""),3)
         abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
         abline(h=0, v=c(1:10), lty=2,col="grey89")
         abline(h=0.8, col=2)
@@ -258,7 +270,7 @@ function(input, output) {
                  xlab="MAF (%)",
                  ylab="Power",
                  main= title)
-            mtext(paste("p = ", input$alpha1, " (one-way unbalanced ANOVA)", sep = ""),3)
+            mtext(paste("eQTL p-value = ", input$alpha1, " (one-way unbalanced ANOVA)", sep = ""),3)
             abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
             abline(h=0, v=c(1:10), lty=2,col="grey89")
             # add power curves
@@ -275,7 +287,34 @@ function(input, output) {
         }
     )
     
-    ## Descriptions
+    ## Input Entries Explanations
+    
+    output$effectSize <- renderPlot({
+        gene <- data.frame(x = c( rep("CC", 20), rep("TC", 20), rep("TT", 20)), 
+                           y = c( rnorm(20, 0.05, 0.1), rnorm(20, 0.0, 0.05), rnorm(20, -0.1, 0.2)))
+        gene %>% ggplot( aes(x = x, y = y, fill = x)) +
+            geom_boxplot() +
+            geom_abline(aes(intercept = 0.125, slope = -0.07)) +
+            annotate("text", label = "slope = eQTL effect size", x = 1.5, y = -0.2) +
+            xlab("") +
+            ylab("Rank Normalized Gene Expression") +
+            ggtitle("cis-eQTL analysis") +
+            theme(plot.title = element_text(lineheight = 0.8, face = "bold"))
+    })
+    
+    output$effectSize1 <- renderPlot({
+        gene <- data.frame(x = c( rep("CC", 20), rep("TC", 20), rep("TT", 20)), 
+                           y = c( rnorm(20, 0.05, 0.1), rnorm(20, 0.0, 0.05), rnorm(20, -0.1, 0.2)))
+        gene %>% ggplot( aes(x = x, y = y, fill = x)) +
+            geom_boxplot() +
+            geom_abline(aes(intercept = 0.125, slope = -0.07)) +
+            annotate("text", label = "slope = eQTL effect size", x = 1.5, y = -0.2) +
+            xlab("") +
+            ylab("Rank Normalized Gene Expression") +
+            ggtitle("cis-eQTL analysis") +
+            theme(plot.title = element_text(lineheight = 0.8, face = "bold"))
+    })
+    
     output$description1 <- renderUI({
         withMathJax(helpText("$$\\text{intra-class correlation = correlation between } y_{ij} \\text{ and } y_{ik}$$"),
                     helpText("$$\\text{= }\\sigma^2_{\\beta} / (\\sigma^2_{\\beta}+\\sigma^2_{\\epsilon})$$"),

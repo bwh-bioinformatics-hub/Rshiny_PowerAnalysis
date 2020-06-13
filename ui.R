@@ -20,12 +20,13 @@ basicPage(
                                         textInput(inputId = "MAF", label = "Minor allele frequencies (between 0 and 0.5; separated by ',')", 
                                                      value = "0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1"),
                                         submitButton("submit"),
+                                        plotOutput(outputId = "effectSize", width = 350, height = 200),
                                         htmlOutput("description1")
                                     ),
                                 mainPanel(
                                     
                                     plotOutput(outputId = "cell", click = "plot_click", width = 800, height = 500),
-                                    #verbatimTextOutput("cell_info"),
+                                    # verbatimTextOutput("cell_info"),
                                     downloadButton('export', "Download Report"),
                                     htmlOutput("description")
                                     )
@@ -46,12 +47,13 @@ basicPage(
                                         numericInput(inputId = "alpha1", label = "Family-wise type I error rate = 0.05/nTests = 0.05/(number of genes * number of SNPs)", 
                                                      value = 5.4e-8, min = 0, max = 1),
                                         submitButton("submit"),
+                                        plotOutput(outputId = "effectSize1", width = 350, height = 200),
                                         htmlOutput("description3")
                                 ),
                                 mainPanel(
                                     
                                         plotOutput(outputId = "tissue", click = "plot_click1", width = 800, height = 500),
-                                        #verbatimTextOutput("tissue_info"),
+                                        # verbatimTextOutput("tissue_info"),
                                         downloadButton('export2', "Download Report"),
                                         htmlOutput("description2")
                                     
