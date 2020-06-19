@@ -97,6 +97,12 @@ function(input, output) {
          input$rho
     })
     
+    text1.data <- reactive({
+        shiny::validate(need((input$rho2 <= 1 && input$rho2 >= 0),
+                             "Intra-class correlation must in range [0, 1]"))
+        input$rho2
+    })
+    
     # #observe Events
     # vals <- reactiveValues()
     # observeEvent(input$plot_click)
@@ -348,5 +354,52 @@ function(input, output) {
             helpText(" $$\\epsilon_{i} \\text{ ~ } N(0, \\rho^2)$$"),
             helpText("$$i = 1 ... n$$"))
     })
+    
+    
+    ## Approximate sample sizes with given inputs
+    
+    ## First start from an initial guess: n = 100
+    ## Then increment n by 100 in each iteration to approximate n when power level approaches input with error < 0.001
+    ## Each time power level > input, cut increment value by 1/2
+    ## Power level shall be < 1.0
+    output$approx <- renderUI({
+        # n & inc & approx for single cell eqtl
+        # n2 & inc2 & approx2 for tissue eqtl
+        n <- 100
+        n2 <- 100
+        inc <- 100
+        inc2 <- 100
+        approx <- power.eQTL.scRNAseq(delta=input$delta2, n=n, m=input$m2,sigma.y=input$sigma2, theta=input$maf2, rho=text1.data(), alpha=input$alpha2)
+        approx2 <- powerEQTL(MAF=input$maf2, alpha=input$alpha2, myntotal=n2, delta = input$delta2)
+        
+        while (isTRUE(approx - input$power < 0 || approx - input$power > 0.005)) 
+        {
+            if (approx > input$power)
+            {
+                n = n - inc
+                inc = inc/2
+            }
+            n = n + inc
+            approx = power.eQTL.scRNAseq(delta=input$delta2, n=n, m=input$m2,sigma.y=input$sigma2, theta=input$maf2, rho=text1.data(), alpha=input$alpha2)
+        }
+        
+        while (isTRUE(approx2 - input$power < 0 || approx2 - input$power > 0.005)) 
+        {
+            if (approx2 > input$power)
+            {
+                n2 = n2 - inc2
+                inc2 = inc2/2
+            }
+            n2 = n2 + inc2
+            approx2 = powerEQTL(MAF=input$maf2, alpha=input$alpha2, myntotal=n2, delta = input$delta2)
+        }
+        
+        withMathJax(
+            helpText("The minium sample size to approximate power level ", input$delta2, "(single-cell eQTL) is ", ceiling(n)),
+            helpText("The minium sample size to approximate power level ", input$delta2, "(tissue eQTL) is ", ceiling(n2))
+        )
+
+    })
+    
     
 }
