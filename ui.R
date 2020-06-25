@@ -7,8 +7,11 @@ basicPage(
                 tabPanel("single-cell eQTL", 
                          sidebarLayout(
                              sidebarPanel(
-                                 numericInput(inputId = "n", label = "Number of subjects (n)", 
-                                              value = 100, min = 0),
+                                 
+                                 textInput(inputId = "subjects1", label = "Subject names (separated by ',')",
+                                           value = "DA neurons, Glu neurons, GABA neuron, Astrocytes, Oligodendrocytes, Microglia"),
+                                 textInput(inputId = "myntot1", label = "Sample sizes (separated by ',')", 
+                                           value = "50, 100, 150, 200, 250, 300"),
                                  numericInput(inputId = "m", label = "Number of cells from each subject (m)", 
                                               value = 640, min = 0),
                                  numericInput(inputId = "sigma", label = "Standard deviation of gene expression levels in one group of subjects.", 
@@ -16,20 +19,24 @@ basicPage(
                                  numericInput(inputId = "rho", label = "Intra-class correlation (range [0, 1])", 
                                               value = 0.5, min = 0, max = 1),
                                  numericInput(inputId = "alpha", label = "Family-wise type I error rate", 
-                                              value = 5.4e-8, min = 0, max = 1),
-                                 textInput(inputId = "MAF", label = "Minor allele frequencies (between 0 and 0.5; separated by ',')", 
-                                           value = "0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1"),
+                                              value = 0.05),
+                                 numericInput(inputId = "nTest", label = "Total number of tests", 
+                                              value = 10e5),
+                                 numericInput(inputId = "delta", label = "Mean difference of gene expression levels between groups (slope)", 
+                                              value = 0.29*1.5),
+
                                  submitButton("submit"),
-                                 img(src='eqtl.png', align = "middle", width = 360, height = 150),
-                                 #plotOutput(outputId = "effectSize", width = 350, height = 200),
+                                 
                                  htmlOutput("description1")
                              ),
                              mainPanel(
                                  
                                  plotOutput(outputId = "cell", click = "plot_click", width = 800, height = 500),
-                                 # verbatimTextOutput("cell_info"),
+
                                  downloadButton('export', "Download Report"),
-                                 htmlOutput("description")
+                                 img(src='eqtl.png', align = "middle", width = 480, height = 200),
+                                 htmlOutput("description"),
+                                 
                              )
                          )
                 ),
@@ -43,46 +50,78 @@ basicPage(
                                            value = "50, 100, 150, 200, 250, 300"),
                                  numericInput(inputId = "sigma1", label = "Standard deviation of gene expression levels in one group of subjects.", 
                                               value = 0.29),
-                                 numericInput(inputId = "delta", label = "eQTL effect size", 
+                                 numericInput(inputId = "delta1", label = "Mean difference of gene expression levels between groups (slope)", 
                                               value = 0.29*1.5),
-                                 numericInput(inputId = "alpha1", label = "Family-wise type I error rate = 0.05/nTests = 0.05/(number of genes * number of SNPs)", 
-                                              value = 5.4e-8, min = 0, max = 1),
+                                 numericInput(inputId = "alpha1", label = "Family-wise type I error rate", 
+                                              value = 0.05),
+                                 numericInput(inputId = "nTest1", label = "Total number of tests", 
+                                              value = 10e5),
+                                 radioButtons(inputId = "radio", label = "Model",
+                                              choices = c("One-way unbalanced anova", "Simple linear regression")),
                                  submitButton("submit"),
-                                 img(src='eqtl.png', align = "middle", width = 360, height = 150),
-                                 # plotOutput(outputId = "effectSize1", width = 350, height = 200),
+
                                  htmlOutput("description3")
                              ),
                              mainPanel(
                                  
                                  plotOutput(outputId = "tissue", click = "plot_click1", width = 800, height = 500),
-                                 # verbatimTextOutput("tissue_info"),
                                  downloadButton('export2', "Download Report"),
-                                 htmlOutput("description2")
+                                 
+                                 img(src='eqtl.png', align = "middle", width = 480, height = 200),
+                                 htmlOutput("description2"),
+                                 
                                  
                                  
                              ))),
                 tabPanel("Sample Size Estimation",
                          sidebarLayout(
                              sidebarPanel(
-                                 numericInput(inputId = "m2", label = "Number of cells from each subject (m)",
-                                              value = 640, min = 0),
-                                 numericInput(inputId = "sigma2", label = "Standard deviation of gene expression levels in one group of subjects.",
-                                              value = 0.29),
-                                 numericInput(inputId = "rho2", label = "Intra-class correlation (range [0, 1])",
-                                              value = 0.5, min = 0, max = 1),
-                                 numericInput(inputId = "delta2", label = "eQTL effect size",
-                                              value = 0.29*1.5),
-                                 numericInput(inputId = "alpha2", label = "Family-wise type I error rate",
-                                              value = 5.4e-8, min = 0, max = 1),
+                                 
                                  numericInput(inputId = "maf2", label = "Minor allele frequencies (between 0 and 0.5)",
-                                           value = 0.02),
+                                              value = 0.02),
                                  numericInput(inputId = "power", label = "Desired Power level",
                                               value = 0.8, min = 0, max = 1),
+                                 numericInput(inputId = "eSize", label = "eQTL effect size", 
+                                              value = 1),
+                                 numericInput(inputId = "rho3", label = "Intra-class correlation (range [0, 1]; single-cell)", 
+                                              value = 0.5, min = 0, max = 1),
+                                 numericInput(inputId = "m3", label = "Number of cells from each subject (m; single-cell)", 
+                                              value = 640, min = 0),
+                                 
+                                 
                                  submitButton("submit")
                                 ),
-                             mainPanel(htmlOutput("approx"))
+                             mainPanel(
+                                 htmlOutput("title"),
+                                 tableOutput("approx"),
+                                 htmlOutput("title1"),
+                                 tableOutput("approx1"),
+                                 htmlOutput("Explanation")
+                                 )
                              )
                          )
+                # tabPanel("Single-cell eQTL - Sample Size Estimation",
+                #          sidebarLayout(
+                #              sidebarPanel(
+                #                  
+                #                  numericInput(inputId = "maf3", label = "Minor allele frequencies (between 0 and 0.5)",
+                #                               value = 0.02),
+                #                  numericInput(inputId = "power1", label = "Desired Power level",
+                #                               value = 0.8, min = 0, max = 1),
+                #                  numericInput(inputId = "delta3", label = "eQTL effect size", 
+                #                               value = 0.29*1.5),
+                #                  numericInput(inputId = "rho3", label = "Intra-class correlation (range [0, 1])", 
+                #                               value = 0.5, min = 0, max = 1),
+                #                  numericInput(inputId = "m3", label = "Number of cells from each subject (m)", 
+                #                               value = 640, min = 0),
+                #                  
+                #                  submitButton("submit")
+                #              ),
+                #              mainPanel(
+                #                  tableOutput("approx1")
+                #              )
+                #          )
+                # )
                 
                 #htmlOutput("summary"),
     )
