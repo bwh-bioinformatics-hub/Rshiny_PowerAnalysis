@@ -1,164 +1,50 @@
 library(shiny)
+library(shinyjs)
 library(devtools)
-library('powerEQTL') 
-library(dplyr)
-library(ggplot2)
 
+source("./global.R")
 
-powerEQTL.ANOVA=function(MAF, 
-                   alpha=NULL,
-                   n=200,
-                   sigma=0.13,
-                   delta=0.13)
-{
-    gm1 = delta # mu2 - mu1
-    gm2 = 0
-    gm3 = delta # mu3 - mu2
+function(input, output, session) {
     
-    w1=MAF^2 # mutation homozygotes
-    w2=2*MAF*(1-MAF) # heterozygotes
-    w3=(1-MAF)^2 # wildtype homozygotes
+    ## Global Values
     
-    k=3
-    mydf1=k-1
-    mydf2=n-k
-    q=qf(p=1-alpha, df1=mydf1, df2=mydf2)
-    
-    wVec=c(w1, w2, w3)
-    muVec=c(gm1, gm2, gm3)
-    
-    mu=sum(wVec*muVec, na.rm=TRUE)
-    
-    myncp = n*sum(wVec*(muVec-mu)^2, na.rm=TRUE)
-    myncp=myncp/(sigma^2)
-    
-    power=1-pf(q=q, df1=mydf1, df2=mydf2,
-               ncp=myncp)
-    
-    return(power)
-}
-
-power.eQTL.scRNAseq=function(delta, n, m, sigma.y, theta=0.2, rho=0.8, alpha=0.05)
-{
-    za2=qnorm(1-alpha/2)
-    sigma.x=sqrt(2*theta*(1-theta))
-    part0=sigma.x*delta*sqrt(m*(n-1))/(sigma.y*sqrt(1+(m-1)*rho))
-    part1 = za2-part0
-    
-    part2 = -za2-part0
-    
-    power = 1- pnorm(part1) + pnorm(part2)
-    
-    return(power)
-    
-}
-
-powerEQTL.SLR.default=function(MAF,
-                               slope=0.13,
-                               n=200,
-                               sigma.y=0.13,
-                               FWER=0.05,
-                               nTests=200000)
-{
-    sigma2.x = 2*MAF*(1-MAF)
-    sigma2.y = sigma.y^2
-    alpha = FWER/nTests
-    
-    lambda.a = slope
-    
-    numer.xi = lambda.a *sqrt((n-1)*sigma2.x)
-    denom.xi= sqrt(abs(sigma2.y - lambda.a^2*sigma2.x))
-    
-    xi = numer.xi / denom.xi
-    
-    mydf = n - 2
-    cutoff = qt(1-alpha/2, df=mydf, ncp=0)
-    
-    power = 1 - pt(cutoff, df=mydf, ncp=xi)
-    power = power + pt(-cutoff, df=mydf, ncp=xi)
-    
-    return(power)
-    
-}
-
-
-diffPower4ss.ANOVA=function(n,
-                            MAF=0.1,
-                            delta=0.2,
-                            power=0.8,
-                            sigma=0.2,
-                            FWER=0.05,
-                            nTests=200000)
-{
-    est.power=powerEQTL.ANOVA(MAF=MAF,
-                              n=n,
-                              sigma=sigma,
-                              delta=delta, 
-                              alpha=FWER/nTests)
-    diff=est.power - power
-    return(diff)
-    
-}
-
-diffPower4ss.SLR=function(n,
-                            MAF=0.1,
-                            slope=0.13,
-                            power=0.8,
-                            sigma=0.13,
-                            FWER=0.05,
-                            nTests=200000)
-{
-    est.power=powerEQTL.SLR.default(MAF = MAF,
-                                    slope=slope,
-                                    n=n,
-                                    sigma.y=sigma,
-                                    FWER=FWER,
-                                    nTests=nTests) 
-    diff=est.power - power
-    return(diff)
-    
-}
-
-diffPower4ss.scRNAseq=function(n,
-                               m,
-                          MAF=0.1,
-                          slope=0.13,
-                          power=0.8,
-                          sigma=0.13,
-                          FWER=0.05,
-                          nTests=200000,
-                          rho=0.8)
-{
-    est.power=power.eQTL.scRNAseq(theta = MAF,
-                                    delta=slope,
-                                    n=n,
-                                    m=m,
-                                    sigma.y=sigma,
-                                    alpha = FWER/nTests,
-                                    rho=rho) 
-    diff=est.power - power
-    return(diff)
-    
-}
-
-
-function(input, output) {
-
     ## values for theta (MAF) (single-cell)
-    mafVec=seq(from=0.005,to=0.5,by=0.001)
-    mafLen=length(mafVec)
-
+    mafVec <- reactive({
+        # read in maf range
+        rg <- as.numeric(unlist(strsplit(as.character(input$MAF_sc), ",")))
+        
+        # check input values
+        shiny::validate(need((length(rg) == 2), "Need one minimum and one maximum for MAF range")) 
+        shiny::validate(need((rg[1] <= 0.5 && rg[1] >= 0 && rg[2] <= 0.5 && rg[2] >= 0), 
+                             "Minor Allele Frequencies must in range [0, 0.5]"))
+        shiny::validate(need((rg[1] <= rg[2]), "Max MAF value must be smaller than min MAF value"))
+        
+        # generate maf sequence (log-spaced)
+        exp(seq(from=log(rg[1]), to=log(rg[2]), length.out = 100))
+        })
+    mafLen <-reactive(length(mafVec()))
     # values for theta (MAF) (tissue)
-    mafVec1 = seq(from=0.005, to=0.5, by=0.001)
-    mafLen1 = length(mafVec1)
+    mafVec1 <- reactive({
+        # read in maf range
+        rg1 <- as.numeric(unlist(strsplit(as.character(input$MAF_t), ",")))
+        
+        # check input values
+        shiny::validate(need((length(rg1) == 2), "Need one minimum and one maximum for MAF range"))
+        shiny::validate(need((rg1[1] <= 0.5 && rg1[1] >= 0 && rg1[2] <= 0.5 && rg1[2] >= 0), 
+                             "Minor Allele Frequencies must in range [0, 0.5]"))
+        shiny::validate(need((rg1[1] <= rg1[2]), "Max MAF value must be smaller than min MAF value"))
+        
+        # generate maf sequence (log-spaced)
+        exp(seq(from=log(rg1[1]), to=log(rg1[2]), length.out = 100))
+    })
+    mafLen1 <-reactive(length(mafVec1()))
     
     ## values for sample sizes (tissue eqtl)
-    subVec.data <- reactive({unlist(strsplit(as.character(input$subjects), ","))})
+    # subVec.data <- reactive({unlist(strsplit(as.character(input$subjects), ","))})
     sizeVec.data <- reactive({as.numeric(unlist(strsplit(as.character(input$myntot), ",")))})
     sizeLen.data <- reactive(length(sizeVec.data()))
-    
     # values for sample sizes (single-cell eqtl)
-    subVec1.data <- reactive({unlist(strsplit(as.character(input$subjects1), ","))})
+    # subVec1.data <- reactive({unlist(strsplit(as.character(input$subjects1), ","))})
     sizeVec1.data <- reactive({as.numeric(unlist(strsplit(as.character(input$myntot1), ",")))})
     sizeLen1.data <- reactive(length(sizeVec1.data()))
     
@@ -167,25 +53,87 @@ function(input, output) {
          shiny::validate(need((input$rho <= 1 && input$rho >= 0),
                        "Intra-class correlation must in range [0, 1]"))
          input$rho
-    })
-    
+    })    #sc
     text1.data <- reactive({
         shiny::validate(need((input$rho2 <= 1 && input$rho2 >= 0),
                              "Intra-class correlation must in range [0, 1]"))
         input$rho2
+    })   #t
+    
+    ##initialize power
+    power_sc = 0  ## (sc)
+    power_t = 0 ##(t)
+    
+    ## sc power eQTL
+    power_sc_eQTL <- reactive({
+        # calculate scRNAseq for each sample size and maf
+        sc = array(numeric(sizeLen1.data()*mafLen()), dim=c(sizeLen1.data(),mafLen()), 
+                                    dimnames = list(as.character(sizeVec1.data()), as.character(mafVec())))
+        for(i in 1:sizeLen1.data()) {
+            for(j in 1:mafLen()) {
+                sc[i,j]=power.eQTL.scRNAseq(delta=input$delta, n=sizeVec1.data()[i], 
+                                                       m=input$m,sigma.y=input$sigma, theta=mafVec()[j], 
+                                                       rho=text.data(), alpha=input$alpha/input$nTest)
+            }
+        }
+        # store it to power_sc_eQTL
+        sc
+        })
+    
+    ## tissue power eQTL
+    power_tissue <- reactive({
+        t <- array(numeric(sizeLen.data()*mafLen1()), dim=c(sizeLen.data(),mafLen1()), 
+                   dimnames = list(sizeVec.data(), as.character(mafVec1()*100)))
+        
+        # ANOVA 
+        if (input$radio == "One-way unbalanced anova")
+        {
+            for (i in 1:sizeLen.data()){
+                for (j in 1:mafLen1()){
+                    # treating each cell independantly 
+                    t[i,j] <- powerEQTL.ANOVA(MAF=mafVec1()[j], FWER=input$alpha1, nTests=input$nTest1, 
+                                              n=sizeVec.data()[i], deltaVec = c(input$delta1, input$delta2), sigma = input$sigma1)
+                }
+            }
+        } 
+        else
+        {
+            # SLR
+            for (i in 1:sizeLen.data()){
+                for (j in 1:mafLen1()){
+                    # treating each cell independantly 
+                    t[i,j] <- powerEQTL.SLR.default(MAF=mafVec1()[j], FWER=input$alpha1, nTests = input$nTest1, n=sizeVec.data()[i], slope = input$delta1, sigma.y = input$sigma1)
+                }
+            }
+        }
+        
+        # store it to power_tissue
+        t
+    })
+    
+    ##author names
+    output$authors <- renderUI({
+        tags$div(
+            tags$h5("This R shiny application is developed by Xiaoqi Li, under the supervisions of Drs. 
+                    Xianjun Dong and Weiliang Qiu."),
+            
+            paste0("Thank you very much for using our 'Sample size and power calculator for bulk tissue 
+                   and single-cell eQTL analysis'! Please let us know what do you think."),
+            tags$a("Click here!", href = "https://gitreports.com/issue/bwh-bioinformatics-hub/Rshiny_PowerAnalysis")
+        )
     })
     
     
     ## single-cell eQTL
-    sc.data <- reactive({
-        power_sc_eQTL <- array(numeric(sizeLen1.data()*mafLen), dim=c(sizeLen1.data(),mafLen), dimnames = list(as.character(sizeVec1.data()), as.character(mafVec)))
-        for(i in 1:sizeLen1.data()) {
-            for(j in 1:mafLen) {
-                power_sc_eQTL[i,j]=power.eQTL.scRNAseq(delta=input$delta, n=sizeVec1.data()[i], m=input$m,sigma.y=input$sigma, theta=mafVec[j], rho=text.data(), alpha=input$alpha/input$nTest)
-            }
-        }
-        
-        xrange <- range(mafVec*100)
+    
+    ## hidden input options
+    observeEvent(input$btn_sc, {
+        toggle("MAF_sc")
+        toggle("pos")
+    })
+    ## plot single-cell eQTL
+    output$cell <- renderPlot({
+        xrange <- range(mafVec()*100)
         yrange <- c(0:1)
         colors <- hcl.colors(sizeLen.data(),"Set 2")
         title <- "Single-cell eQTL"
@@ -195,61 +143,86 @@ function(input, output) {
         plot(xrange, yrange, xlim=range(xrange), log='x', type="n",
              xlab="MAF (%)",
              ylab="Power",
-             main= title)
+             main= title, xaxt = "n", yaxt = "n")
+        axis(1, cex.axis = 1.2)
+        axis(2, cex.axis = 1.2)
         
-        mtext(paste("linear mixed effects model (alpha=",input$alpha/input$nTest,", eQTL effect size=",input$delta,", n_cell="
+        
+        mtext(paste("linear mixed effects model (alpha=",input$alpha/input$nTest,", slope=",input$delta,", n_cell="
                     , input$m ,", sigma=", input$sigma ,", rho=", input$rho ,")", sep = ""),3)
         
         abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
         abline(h=0, v=c(1:10), lty=2,col="grey89")
-        abline(h=0.8, col=2)
-        
+
         # add power curves
         for (i in 1:sizeLen1.data()){
-            lines(mafVec*100, power_sc_eQTL[i,], type="l", lwd=4, col=colors[i])
-            pos=which(power_sc_eQTL[i,]>=0.8)[1]
-            abline(v=mafVec[pos]*100, col=colors[i])
-            text(mafVec[pos]*100,0.8,labels = as.character(mafVec[pos]*100), srt = 90,cex=0.6, adj=0.5)
+            lines(mafVec()*100, power_sc_eQTL()[i,], type="l", lwd=4, col=colors[i])
         }
-        legend("bottomright", title="Sample size (n)", paste(subVec.data(), " (n = ",sizeVec.data(),")", sep=""),
-               title.col='black',text.col=colors,cex =.7, bty='n')
+        legend(input$pos, title="Sample size (n)", paste("n = ",sizeVec1.data(),"", sep=""),
+               title.col='black',text.col=colors,cex =1, bty='n')
     })
-     
-    ## plot single-cell eQTL
-    output$cell <- renderPlot({
-        sc.data()
+    ## Interactive plot for sc
+    observeEvent(input$sc_plot_hover, {
+        # get hover coordinate
+        power_sc <<- input$sc_plot_hover$y
+
+        #redraw the sc power curves
+        output$cell <- renderPlot({
+            
+            xrange <- range(mafVec()*100)
+            yrange <- c(0:1)
+            colors <- hcl.colors(sizeLen.data(),"Set 2")
+            title <- "Single-cell eQTL"
+            
+            
+            # treating each cell independantly 
+            plot(xrange, yrange, xlim=range(xrange), log='x', type="n",
+                 xlab="MAF (%)",
+                 ylab="Power",
+                 main= title, xaxt = "n", yaxt = "n")
+            axis(1, cex.axis = 1.2)
+            axis(2, cex.axis = 1.2)
+            
+            
+            mtext(paste("linear mixed effects model (FWER=",input$alpha, ", nTests=", input$nTest,", slope=",input$delta,", n_cell="
+                        , input$m ,", sigma=", input$sigma ,", rho=", input$rho ,")", sep = ""),3)
+            
+            abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
+            abline(h=0, v=c(1:10), lty=2,col="grey89")
+            abline(h=power_sc, lty=2, lwd = 1.5, col = 1)
+            text(mafVec()[1]*100, power_sc,labels = as.character(round(power_sc,2)), cex=1, adj=0.5, pos = 1, offset = -.8)  #power level
+
+            # add power curves
+            for (i in 1:sizeLen1.data()){
+                lines(mafVec()*100, power_sc_eQTL()[i,], type="l", lwd=4, col=colors[i])
+                pos=which(power_sc_eQTL()[i,]>=power_sc)[1] #find the least maf for that power
+                abline(v=mafVec()[pos]*100, col=colors[i]) #horizontal line for power level
+                text(mafVec()[pos]*100,power_sc,labels = as.character(round(mafVec()[pos]*100,2)), srt = 90,cex=1, adj=0.5) #maf value
+            }
+            
+            legend(input$pos, title="Sample size (n)", paste("n = ",sizeVec1.data(),"", sep=""),
+                   title.col='black',text.col=colors,cex =1, bty='n')
+        })
+        
     })
     
-    output$cell_info <- renderText({
-        # nearPoints(sc.data, input$plot_click) %>%
-        #     transmute(
-        #         probe,
-        #         gene = HUGO.gene.symbol,
-        #         `eQTL effect size = ` = signif(deltaVec, digits = 2),
-        #         `Power(%) = ` = signif(power_sc_eQTL, digits = 2)
-        #     )
-        paste0("eQTL effect size = ", input$cpoint$x, "\nPower(%) = ", input$cpoint$y)
-    })
     
     ## tissue eQTL
+    
+    ## hidden input options
+    observeEvent(input$btn_t, {
+        toggle("MAF_t")
+        toggle("pos_t")
+    })
     ## plot tissue eQTL
     output$tissue <- renderPlot({
-        power_unbalanced <- array(numeric(sizeLen.data()*mafLen1), dim=c(sizeLen.data(),mafLen1), dimnames = list(sizeVec.data(), as.character(mafVec1*100)))
-        
         # ANOVA 
         if (input$radio == "One-way unbalanced anova")
         {
-            for (i in 1:sizeLen.data()){
-                for (j in 1:mafLen1){
-                    # treating each cell independantly 
-                    power_unbalanced[i,j] <- powerEQTL.ANOVA(MAF=mafVec1[j], alpha=input$alpha1/input$nTest1, n=sizeVec.data()[i], delta = input$delta1, sigma = input$sigma1)
-                }
-            }
-            
             ## plot
             
             # set up graph
-            xrange <- range(mafVec1*100)
+            xrange <- range(mafVec1()*100)
             yrange <- c(0:1)
             colors <- hcl.colors(sizeLen.data(),"Set 2")
             title <- "Tissue eQTL"
@@ -259,21 +232,16 @@ function(input, output) {
                  xlab="MAF (%)",
                  ylab="Power",
                  main= title)
-            mtext(paste("eQTL p-value = ", input$alpha1/input$nTest1, " (one-way unbalanced ANOVA)", sep = ""),3)
+            mtext(paste("One-way unbalanced ANOVA (FWER=",input$alpha1, ", nTests=", input$nTest1,", Δ=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
             
-        } else{
-            # SLR
-            for (i in 1:sizeLen.data()){
-                for (j in 1:mafLen1){
-                    # treating each cell independantly 
-                    power_unbalanced[i,j] <- powerEQTL.SLR.default(MAF=mafVec1[j], FWER=input$alpha1, nTests = input$nTest1, n=sizeVec.data()[i], slope = input$delta1, sigma.y = input$sigma1)
-                }
-            }
-            
+        } 
+        # SLR
+        else
+        {
             ## plot
             
             # set up graph
-            xrange <- range(mafVec1*100)
+            xrange <- range(mafVec1()*100)
             yrange <- c(0:1)
             colors <- hcl.colors(sizeLen.data(),"Set 2")
             title <- "Tissue eQTL"
@@ -283,41 +251,272 @@ function(input, output) {
                  xlab="MAF (%)",
                  ylab="Power",
                  main= title)
-            mtext(paste("eQTL p-value = ", input$alpha1/input$nTest1, " (Simple Linear Regression)", sep = ""),3)
+            mtext(paste("Simple Linear Regression (FWER=",input$alpha, ", nTests=", input$nTest1,", β=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
         }
         
         abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
         abline(h=0, v=c(1:10), lty=2,col="grey89")
-        abline(h=0.8, col=2)
+        
         # add power curves
         for (i in 1:sizeLen.data()){
-            lines(mafVec1*100, power_unbalanced[i,], type="l", lwd=4, col=colors[i])
-            pos1=which(power_unbalanced[i,]>=0.8)[1]
-            abline(v=mafVec1[pos1]*100, col=colors[i])
-            text(mafVec1[pos1]*100,0.8,labels = as.character(mafVec1[pos1]*100), srt = 90,cex=0.6, adj=0.5)
+            lines(mafVec1()*100, power_tissue()[i,], type="l", lwd=4, col=colors[i])
         }
-        legend("bottomright", title="Sample size (n)", paste(subVec.data(), " (n = ",sizeVec.data(),")", sep=""),
-               title.col='black',text.col=colors,cex =.7, bty='n')
+        legend(input$pos_t, title="Sample size (n)", paste("n = ",sizeVec.data(), sep=""),
+               title.col='black',text.col=colors,cex =1, bty='n')
     })
-    
-    output$tissue_info <- renderText({
-        paste0("MAF(%) = ", input$plot_click1$x, "\nPower(%) = ", input$plot_click1$y, sep = "")
+    # Reactive Input Title for delta for different models
+    observeEvent(input$radio,{
+        
+        if(input$radio=="One-way unbalanced ANOVA")
+        {
+            updateNumericInput(session, inputId = "delta1", label  = "Mean difference of gene expression levels between genotype classes (δ)", value = input$delta1)
+            show("delta2")
+            output$demo <- renderUI({
+                img(src='eQTL_demo_ANOVA.png', align = "middle", width = "550px", height = "170px")
+            })
+            output$description2 <- renderUI({
+                tags$div(
+                    tags$h5("One-way Unbalanced ANOVA Model"),
+                    
+                    withMathJax(),
+                    
+                    paste0("Power calculation for eQTL analysis that tests if a SNP is associated to a gene expression level by using unbalanced one-way ANOVA, as the 
+                   GTEx consortium used (GTEx consortium, Nature Genetics, 2013). Assuming we are testing ", input$nTest1 , " SNP-gene eQTL pairs (i.e. number of 
+                   genes * number of SNPs), using a Bonferroni correction, we set the significance threshold, α, to be ", input$alpha1, "/", input$nTest1, ". 
+                   We model the expression data as log-normally distributed with a log standard deviation of ", input$sigma1, " (we assume that each genotype 
+                   class of subjects have the same standard deviation). This level of noise can be based on estimates from previous study or pilot data. The effect size 
+                   depends both on the minor allele frequency (MAF) of the SNP and the actual log expression change between genotype classes (denoted by δ).
+                   Figure above shows the statistical power of an eQTL analysis using an ANOVA statistical test as a function the number of subjects and 
+                   the minor allele frequency (MAF), and assumes δ=", input$delta1," (equivalent to detecting a log-expression change similar to the ", 
+                           input$delta1/input$sigma1, "-fold of standard deviation within a single genotype class)."),
+                    tags$br(),
+                    paste0("According to"),
+                    tags$a( "SAS online document", href =  "https://support.sas.com/documentation/cdl/en/statug/63033/HTML/default/viewer.htm#statug_power_a0000000982.htm"),
+                    paste0(", the power calculation formula is:"),
+                    helpText(" $$power = Pr(F \\ge F_{1-\\alpha}(k-1, N-k) | F\\text{ ~ }F_{k-1, N-k, \\lambda})$$"),
+                    HTML(paste("where k = 3 is the number of groups of subjects, N is the total number of subjects. F",tags$sub("1−α"),"(k − 1, N − k) is the 100(1 − α)-th 
+                   percentile of central F distribution with degrees of freedoms k − 1 and N − k, and F",tags$sub("k−1,N−k,λ")," is the non-central F distribution
+                   with degrees of freedoms k − 1 and N − k and non-central parameter (ncp) λ. The ncp λ is equal to ")),
+                    tags$br(),
+                    helpText("$$\\lambda = N/\\sigma^2 (p^2q(1+p)\\delta_1^2 + q^2p(1+q)\\delta_2^2 + 2p^2q^2\\delta_1\\delta_2)$$"),
+                    HTML(paste("when δ",tags$sub("1"),"equals to δ",tags$sub("2"),", we have")),
+                    helpText(" $$\\lambda = 2 p (1-p)  (\\frac{\\delta}{\\sigma})$$"),
+                    paste0("where p is the minor allele frequency, δ is the mean difference of gene expression levels between genotype classes, and σ is 
+                   the standard deviation of gene expression levels in one group of subjects."),
+                    tags$br(),
+                    
+                    paste0("This plot uses the function of ‘powerEQTL.ANOVA’ in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    paste0(". More details can be found in the online manual of the function ‘powerEQTL.ANOVA’ in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$br(),
+                    tags$br(),
+                    
+                    tags$b("References"),
+                    tags$br(),
+                    
+                    paste0("The GTEx Consortium. The Genotype-Tissue Expression (GTEx) project. Nature Genetics. 2013 June ; 45(6): 580–585")
+                    
+                )
+            })
+        }
+        else
+        {
+            updateNumericInput(session, inputId = "delta1", label = "Slope of the regression line (β)", value = input$delta1)
+            hide("delta2")
+            output$demo <- renderUI({
+                img(src='eQTL_demo_SLR.png', align = "middle", width = "550px", height = "170px")
+            })
+            output$description2 <- renderUI({
+                tags$div(
+                    
+                    withMathJax(),
+                    
+                    tags$h5("Simple Linear Regression"),
+
+                    paste("To test if a SNP is associated with a gene expression level, we use the simple linear regression based on Dupont and Plummer (1998):"),
+                    helpText(" $$y_{i} = \\beta_0 + \\beta_1  x_i + \\epsilon_{i}$$"),
+                    helpText("$$i = 1 ... n$$"),
+                    HTML(paste0("where y", tags$sub("i"), " is the expression level of the gene for the subject i and x", tags$sub("i"), " is the genotype of the i-th 
+                    subject by using additive coding (e.g. 0 for AA, 1 for AC, and 2 for CC). β", tags$sub("1")," is the slope of the regression line and can be 
+                    estimated with the following distribution under the alternative hypothesis:")),
+                    tags$br(),
+                    helpText(" $$\\beta_1 \\text{ ~ } N(\\delta, \\frac{\\rho^2}{L_{xx}}) \\text{ and } \\beta_0 = y - \\beta_1 x$$"),
+                    paste0("Hence, the power can be estimated with: "),
+                    helpText("$$1-\\beta = 1 - T_{n-2, \\lambda}[t_{n-2}(\\alpha/2)] + T_{n-2, \\lambda}[-t_{n-2}(\\alpha/2)]$$"),
+                    HTML(paste0("where T", tags$sub("n−2,λ"), "(a) is the value at a of the cumulative distribution function of non-central t distribution with (n − 2)
+                    degrees of freedom and non-centrality parameter λ. λ can be written as: ")),
+                    helpText("$$ \\lambda = \\frac{\\delta}{\\sqrt{(\\sigma_y^2 - \\delta^2 2(1-p)p) / ((n-1)2(1-p)p)}} $$"),
+                    
+                    
+                    paste0("This plot uses the function of ‘powerEQTL.SLR’ in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    paste0(". More details can be found in the online manual of the function ‘powerEQTL.SLR’ in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$br(),
+                    tags$br(),
+                    
+                    tags$b("References"),
+                    tags$br(),
+                    
+                    paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601.")
+                )
+            })
+        }
+        ## update plot
+        output$tissue <- renderPlot({
+            power_tissue <- array(numeric(sizeLen.data()*mafLen1()), dim=c(sizeLen.data(),mafLen1()), dimnames = list(sizeVec.data(), as.character(mafVec1()*100)))
+            
+            # ANOVA 
+            if (input$radio == "One-way unbalanced ANOVA")
+            {
+                for (i in 1:sizeLen.data())
+                {
+                    for (j in 1:mafLen1())
+                    {
+                        # treating each cell independantly 
+                        power_tissue[i,j] <- powerEQTL.ANOVA(MAF=mafVec1()[j], FWER=input$alpha1, nTests=input$nTest1, 
+                                                             n=sizeVec.data()[i], deltaVec = c(input$delta1, input$delta2), sigma = input$sigma1)
+                    }
+                }
+                
+                ## plot
+                
+                # set up graph
+                xrange <- range(mafVec1()*100)
+                yrange <- c(0:1)
+                colors <- hcl.colors(sizeLen.data(),"Set 2")
+                title <- "Tissue eQTL"
+                
+                ## 	 # treating each cell independantly 
+                plot(xrange, yrange, xlim=range(xrange), log='x', type="n",
+                     xlab="MAF (%)",
+                     ylab="Power",
+                     main= title)
+                mtext(paste("One-way unbalanced ANOVA (FWER=",input$alpha1, ", nTests=", input$nTest1,", Δ=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
+                
+            } 
+            # SLR
+            else
+            {
+                for (i in 1:sizeLen.data())
+                {
+                    for (j in 1:mafLen1())
+                    {
+                        power_tissue[i,j] <- powerEQTL.SLR.default(MAF=mafVec1()[j], FWER=input$alpha1, nTests = input$nTest1, n=sizeVec.data()[i], slope = input$delta1, sigma.y = input$sigma1)
+                    }
+                }
+
+                # set up graph
+                xrange <- range(mafVec1()*100)
+                yrange <- c(0:1)
+                colors <- hcl.colors(sizeLen.data(),"Set 2")
+                title <- "Tissue eQTL"
+                
+                ## 	 # treating each cell independantly 
+                plot(xrange, yrange, xlim=range(xrange), log='x', type="n",
+                     xlab="MAF (%)",
+                     ylab="Power",
+                     main= title)
+                mtext(paste("Simple Linear Regression (FWER=",input$alpha, ", nTests=", input$nTest1,", β=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
+            }
+            
+            abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
+            abline(h=0, v=c(1:10), lty=2,col="grey89")
+            
+            # add power curves
+            for (i in 1:sizeLen.data()){
+                lines(mafVec1()*100, power_tissue[i,], type="l", lwd=4, col=colors[i])
+            }
+            legend(input$pos_t, title="Sample size (n)", paste("n = ",sizeVec.data(), sep=""),
+                   title.col='black',text.col=colors,cex =1, bty='n')
+        })
     })
-    
+    ## Interactive plot for tissue
+    observeEvent(input$t_plot_hover$y,{
+        # get hover coordinate
+        power_t <<- input$t_plot_hover$y
+        
+        # ANOVA 
+        if (input$radio == "One-way unbalanced ANOVA")
+        {
+            ## replot tissue eQTL for ANOVA
+            output$tissue <- renderPlot({
+                # set up graph
+                xrange <- range(mafVec1()*100)
+                yrange <- c(0:1)
+                colors <- hcl.colors(sizeLen.data(),"Set 2")
+                title <- "Tissue eQTL"
+                
+                ## 	 # treating each cell independantly 
+                plot(xrange, yrange, xlim=range(xrange), log='x', type="n",
+                     xlab="MAF (%)",
+                     ylab="Power",
+                     main= title)
+                mtext(paste("One-way unbalanced ANOVA (FWER=",input$alpha1, ", nTests=", input$nTest1,", Δ=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
+                
+                abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
+                abline(h=0, v=c(1:10), lty=2,col="grey89")
+                abline(h=power_t, lty=2, lwd = 1.5, col = 1)
+                text(mafVec1()[1]*100, power_t,labels = as.character(round(power_t,2)), cex=1, adj=0.5, pos = 1, offset = -.8)  #power level
+                
+                # add power curves
+                for (i in 1:sizeLen.data()){
+                    lines(mafVec1()*100, power_tissue()[i,], type="l", lwd=4, col=colors[i])
+                    pos1=which(power_tissue()[i,]>=power_t)[1]
+                    abline(v=mafVec1()[pos1]*100, col=colors[i])
+                    text(mafVec1()[pos1]*100,power_t,labels = as.character(round(mafVec1()[pos1]*100,2)), srt = 90,cex=1, adj=0.5)
+                }
+                
+                legend(input$pos_t, title="Sample size (n)", paste("n = ",sizeVec.data(), sep=""),
+                       title.col='black',text.col=colors,cex =1, bty='n')
+            })
+        } 
+        # SLR
+        if (input$radio == "Simple linear regression")
+        {
+            ## plot
+            output$tissue <- renderPlot({
+                # set up graph
+                xrange <- range(mafVec1()*100)
+                yrange <- c(0:1)
+                colors <- hcl.colors(sizeLen.data(),"Set 2")
+                title <- "Tissue eQTL"
+                
+                ## 	 # treating each cell independantly 
+                plot(xrange, yrange, xlim=range(xrange), log='x', type="n",
+                     xlab="MAF (%)",
+                     ylab="Power",
+                     main= title)
+                mtext(paste("Simple Linear Regression (FWER=",input$alpha1, ", nTests=", input$nTest1,", β=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
+                
+                abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
+                abline(h=0, v=c(1:10), lty=2,col="grey89")
+                abline(h=power_t, lty=2, lwd = 1.5, col = 1)
+                text(mafVec1()[1]*100, power_t,labels = as.character(round(power_t,2)), cex=1, adj=0.5, pos = 1, offset = -.8)  #power level
+                
+                # add power curves
+                for (i in 1:sizeLen.data()){
+                    lines(mafVec1()*100, power_tissue()[i,], type="l", lwd=4, col=colors[i])
+                    pos1=which(power_tissue()[i,]>=power_t)[1]
+                    abline(v=mafVec1()[pos1]*100, col=colors[i])
+                    text(mafVec1()[pos1]*100,power_t,labels = as.character(round(mafVec1()[pos1]*100,2)), srt = 90,cex=1, adj=0.5)
+                }
+                legend(input$pos_t, title="Sample size (n)", paste("n = ",sizeVec.data(), sep=""),
+                       title.col='black',text.col=colors,cex =1, bty='n')
+            })
+        }
+            
+        })
+
+
     ## clicking on the export button will generate a pdf file for sc eQTL
     output$export = downloadHandler(
         filename = function() {"single_cell_eqtl.pdf"},
         content = function(file) {
-            pdf(file, width = 10, height = 8)
-            
-            power_sc_eQTL <- array(numeric(sizeLen1.data()*mafLen), dim=c(sizeLen1.data(),mafLen), dimnames = list(as.character(sizeVec1.data()), as.character(mafVec)))
-            for(i in 1:sizeLen1.data()) {
-                for(j in 1:mafLen) {
-                    power_sc_eQTL[i,j]=power.eQTL.scRNAseq(delta=input$delta, n=sizeVec1.data()[i], m=input$m,sigma.y=input$sigma, theta=mafVec[j], rho=text.data(), alpha=input$alpha)
-                }
-            }
-            
-            xrange <- range(mafVec*100)
+            pdf(file, width = 8, height = 6)
+
+            xrange <- range(mafVec()*100)
             yrange <- c(0:1)
             colors <- hcl.colors(sizeLen.data(),"Set 2")
             title <- "Single-cell eQTL"
@@ -329,50 +528,48 @@ function(input, output) {
                  ylab="Power",
                  main= title)
             
-            mtext(paste("linear mixed effects model (alpha=",input$alpha,", eQTL effect size=",input$delta,", n_cell="
+            mtext(paste("linear mixed effects model (FWER=",input$alpha, ", nTests=", input$nTest,", slope=",input$delta,", n_cell="
                         , input$m ,", sigma=", input$sigma ,", rho=", input$rho ,")", sep = ""),3)
             
             abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
             abline(h=0, v=c(1:10), lty=2,col="grey89")
-            abline(h=0.8, col=2)
+            if (power_sc != 0)
+            {
+                abline(h=power_sc, lty=2, lwd = 1.5, col = 1)
+                text(mafVec()[1]*100, power_sc,labels = as.character(round(power_sc,2)), cex=1, adj=0.5, pos = 1, offset = -.8)  #power level
+            }
             
             # add power curves
-            for (i in 1:sizeLen1.data()){
-                lines(mafVec*100, power_sc_eQTL[i,], type="l", lwd=4, col=colors[i])
-                pos=which(power_sc_eQTL[i,]>=0.8)[1]
-                abline(v=mafVec[pos]*100, col=colors[i])
-                text(mafVec[pos]*100,0.8,labels = as.character(mafVec[pos]*100), srt = 90,cex=0.6, adj=0.5)
+            for (i in 1:sizeLen1.data())
+            {
+                lines(mafVec()*100, power_sc_eQTL()[i,], type="l", lwd=4, col=colors[i])
+                if (power_sc != 0)
+                {
+                    pos=which(power_sc_eQTL()[i,]>=power_sc)[1]
+                    abline(v=mafVec()[pos]*100, col=colors[i])
+                    text(mafVec()[pos]*100,power_sc,labels = as.character(round(mafVec()[pos]*100,2)), srt = 90,cex=1, adj=0.5)
+                }
             }
-            legend("bottomright", title="Sample size (n)", paste(subVec.data(), " (n = ",sizeVec.data(),")", sep=""),
-                   title.col='black',text.col=colors,cex =.7, bty='n')
             
+            legend(input$pos, title="Sample size (n)", paste("n = ",sizeVec.data(), sep=""),
+                   title.col='black',text.col=colors,cex =1, bty='n')
             
             dev.off()
         }
     )
-    
     ## clicking on the export button will generate a pdf file for tissue eQTL
     output$export2 = downloadHandler(
         filename = function() {"tissue_eqtl.pdf"},
         content = function(file) {
-            pdf(file, width = 10, height = 8)
-            
-            power_unbalanced <- array(numeric(sizeLen.data()*mafLen1), dim=c(sizeLen.data(),mafLen1), dimnames = list(sizeVec.data(), as.character(mafVec1*100)))
+            pdf(file, width = 8, height = 6)
             
             # ANOVA 
-            if (input$radio == "One-way unbalanced anova")
+            if (input$radio == "One-way unbalanced ANOVA")
             {
-                for (i in 1:sizeLen.data()){
-                    for (j in 1:mafLen1){
-                        # treating each cell independantly 
-                        power_unbalanced[i,j] <- powerEQTL.ANOVA(MAF=mafVec1[j], alpha=input$alpha1/input$nTest1, n=sizeVec.data()[i], delta = input$delta1, sigma = input$sigma1)
-                    }
-                }
-                
                 ## plot
                 
                 # set up graph
-                xrange <- range(mafVec1*100)
+                xrange <- range(mafVec1()*100)
                 yrange <- c(0:1)
                 colors <- hcl.colors(sizeLen.data(),"Set 2")
                 title <- "Tissue eQTL"
@@ -382,21 +579,16 @@ function(input, output) {
                      xlab="MAF (%)",
                      ylab="Power",
                      main= title)
-                mtext(paste("eQTL p-value = ", input$alpha1/input$nTest1, " (one-way unbalanced ANOVA)", sep = ""),3)
+                mtext(paste("One-way unbalanced ANOVA (FWER=",input$alpha1, ", nTests=", input$nTest1,", Δ=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
                 
-            } else{
-                # SLR
-                for (i in 1:sizeLen.data()){
-                    for (j in 1:mafLen1){
-                        # treating each cell independantly 
-                        power_unbalanced[i,j] <- powerEQTL.SLR.default(MAF=mafVec1[j], FWER=input$alpha1, nTests = input$nTest1, n=sizeVec.data()[i], slope = input$delta1, sigma.y = input$sigma1)
-                    }
-                }
-                
+            } 
+            # SLR
+            else
+            {
                 ## plot
                 
                 # set up graph
-                xrange <- range(mafVec1*100)
+                xrange <- range(mafVec1()*100)
                 yrange <- c(0:1)
                 colors <- hcl.colors(sizeLen.data(),"Set 2")
                 title <- "Tissue eQTL"
@@ -406,230 +598,160 @@ function(input, output) {
                      xlab="MAF (%)",
                      ylab="Power",
                      main= title)
-                mtext(paste("eQTL p-value = ", input$alpha1/input$nTest1, " (Simple Linear Regression)", sep = ""),3)
+                mtext(paste("Simple Linear Regression (FWER=",input$alpha1, ", nTests=", input$nTest1,", β=",input$delta1,", sigma=", input$sigma1 ,")", sep = ""),3)
             }
             
             abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
             abline(h=0, v=c(1:10), lty=2,col="grey89")
-            abline(h=0.8, col=2)
-            # add power curves
-            for (i in 1:sizeLen.data()){
-                lines(mafVec1*100, power_unbalanced[i,], type="l", lwd=4, col=colors[i])
-                pos1=which(power_unbalanced[i,]>=0.8)[1]
-                abline(v=mafVec1[pos1]*100, col=colors[i])
-                text(mafVec1[pos1]*100,0.8,labels = as.character(mafVec1[pos1]*100), srt = 90,cex=0.6, adj=0.5)
+            if (power_t != 0)
+            {
+                abline(h=power_t, lty=2, lwd = 1.5, col = 1)
+                text(mafVec1()[1]*100, power_t,labels = as.character(round(power_t,2)), cex=1, adj=0.5, pos = 1, offset = -.8)  #power level
             }
-            legend("bottomright", title="Sample size (n)", paste(subVec.data(), " (n = ",sizeVec.data(),")", sep=""),
-                   title.col='black',text.col=colors,cex =.7, bty='n')
+                        
+            # add power curves
+            for (i in 1:sizeLen.data())
+            {
+                lines(mafVec1()*100, power_tissue()[i,], type="l", lwd=4, col=colors[i])
+                if (power_t != 0)
+                {
+                    pos1=which(power_tissue()[i,]>=power_t)[1]
+                    abline(v=mafVec1()[pos1]*100, col=colors[i])
+                    text(mafVec1()[pos1]*100,power_t,labels = as.character(round(mafVec1()[pos1]*100,2)), srt = 90,cex=1, adj=0.5)
+                }
+            }
+            legend(input$pos_t, title="Sample size (n)", paste("n = ",sizeVec.data(), sep=""),
+                   title.col='black',text.col=colors,cex =1, bty='n')
             
             dev.off()
         }
     )
     
-    ## Input Entries Explanations
-    
-    output$effectSize <- renderPlot({
-        gene <- data.frame(x = c( rep("CC", 20), rep("TC", 20), rep("TT", 20)), 
-                           y = c( rnorm(20, 0.05, 0.1), rnorm(20, 0.0, 0.05), rnorm(20, -0.1, 0.2)))
-        gene %>% ggplot( aes(x = x, y = y, fill = x)) +
-            geom_boxplot() +
-            geom_abline(aes(intercept = 0.125, slope = -0.07)) +
-            annotate("text", label = "slope = eQTL effect size", x = 1.5, y = -0.2) +
-            xlab("") +
-            ylab("Rank Normalized Gene Expression") +
-            ggtitle("cis-eQTL analysis") +
-            theme(plot.title = element_text(lineheight = 0.8, face = "bold"))
-    })
-    
-    output$effectSize1 <- renderPlot({
-        gene <- data.frame(x = c( rep("CC", 20), rep("TC", 20), rep("TT", 20)), 
-                           y = c( rnorm(20, 0.05, 0.1), rnorm(20, 0.0, 0.05), rnorm(20, -0.1, 0.2)))
-        gene %>% ggplot( aes(x = x, y = y, fill = x)) +
-            geom_boxplot() +
-            geom_abline(aes(intercept = 0.125, slope = -0.07)) +
-            annotate("text", label = "slope = eQTL effect size", x = 1.5, y = -0.2) +
-            xlab("") +
-            ylab("Rank Normalized Gene Expression") +
-            ggtitle("cis-eQTL analysis") +
-            theme(plot.title = element_text(lineheight = 0.8, face = "bold"))
-    })
-    
-    output$description1 <- renderUI({
-        withMathJax(helpText("$$\\text{intra-class correlation = correlation between } y_{ij} \\text{ and } y_{ik}$$"),
-                    helpText("$$\\text{= }\\sigma^2_{\\beta} / (\\sigma^2_{\\beta}+\\sigma^2_{\\epsilon})$$"),
-                    # helpText("$$\\text{= # of folds * standard deviation}$$"),
-                    helpText("$$\\text{alpha = family-wise type I error rate/nTests}$$"),
-                    helpText("$$\\text{nTests = number of genes * number of SNPs}$$"))
-    })
-    
+    ## Sc Plot Explanations
     output$description <- renderUI({
         tags$div(
         
-        withMathJax(
-            helpText("Power calculation for association between genotype and gene expression based on single cell RNAseq data."),
-            helpText("We assume the following simple linear mixed effects model for each (SNP, gene) pair to characterize the association between genotype and gene expression:"),
-            helpText(" $$y_{ij} = \\beta_{0i} + \\beta_1  x_i + \\epsilon_{ij}$$"),
-            helpText(" $$\\beta_{0i} \\text{ ~ } N(\\beta_0, \\sigma^2_{\\beta})$$ "),
-            helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2_{\\epsilon})$$"),
-            helpText("$$i = 1 ... n$$"),
-            helpText("$$j = 1 ... m$$"),
-            helpText("n is the number of subjects, m is the number of cells per subject."),
-            helpText("More details can be found in the supplementary documents")
-            ),
+        withMathJax(),
+    
+        paste0("We assume the following simple linear mixed effects model for each (SNP, gene) pair to 
+               characterize the association between genotype and gene expression:"),
+        helpText(" $$y_{ij} = \\beta_{0i} + \\beta_1  x_i + \\epsilon_{ij}$$"),
+        helpText(" $$\\beta_{0i} \\text{ ~ } N(\\beta_0, \\sigma^2_{\\beta})$$ "),
+        helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2_{\\epsilon})$$"),
+        helpText("$$i = 1 ... n$$"),
+        helpText("$$j = 1 ... m$$"),
+        HTML(paste0("n is the number of subjects, m is the number of cells per subjectct, y", tags$sub("ij")," is 
+        the gene expression level for the j-th cell of the i-th subject, x", tags$sub("i"),"is the genotype for 
+        the i-th subject using additive coding. That is, x", tags$sub("i")," = 0 indicates the i-th subject is
+        a wildtype homozygote, x", tags$sub("i")," = 1 indicates the i-th subject is a heterozygote, and x", 
+        tags$sub("i")," = 2 indicates the i-th subject is a mutation homozygote.")),
+        paste0("For a given SNP, we assume Hardy-Weinberg Equilibrium and denote the minor allele frequency of the SNP
+        as θ. We can derive the power calculation formula is:"),
+        helpText("$$power = 1 - \\Phi(z_{\\alpha*/2} - ab) + \\Phi(-z_{\\alpha*/2} - ab)$$"),
+        helpText("$$\\text{where } a=\\frac{\\sqrt{2\\theta(1-\\theta)}}{\\beta} \\text{ and } b = \\frac{\\delta \\sqrt{m(n-1)}}{\\sqrt{1+(m-1)\\rho}}$$"),
+        HTML(paste0("z",tags$sub("α∗/2"), " is the upper 100α∗/2 percentile of the standard normal distribution,
+        α∗ = α/nTests, nTests is the number of (SNP, gene) pairs, ρ is the intraclass correlation,.")),
+        
+        tags$br(),
+        paste0("This plot uses function ‘powerEQTL.scRNAseq’ in R package "),
+        tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+        paste0(". More details can be found in the online manual of the function ‘powerEQTL.scRNAseq’ in R package "),
+        tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+        tags$br(),
+        tags$br(),   
         
         tags$b("References"),
         tags$br(),
         
-        paste0("Dong X, Xiaoqi L., and Qiu W. Power Calculation for Association Between Genotype and Gene Expression Based on Single Cell RNAseq Data. manuscript. (2020)")
+        paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
+               sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)")
         )
     })
-    
-    output$description3 <- renderUI({
-        withMathJax(
-            helpText("$$\\text{alpha = family-wise type I error rate/nTests}$$"),
-            helpText("$$\\text{nTests = number of genes * number of SNPs}$$"))
-    })
-    
-    output$description2 <- renderUI({
-        tags$div(
-            tags$h5("One-way Unbalanced ANOVA Model"),
-            
-            withMathJax(),
-      
-            helpText("Power calculation for eQTL analysis that tests if a SNP is associated to a gene probe by using unbalanced one-way ANOVA."),
-            helpText("The assumption of the ANOVA approach is that the association of a SNP to a gene probe is tested by using un-balanced one-way 
-                     ANOVA (e.g. Lonsdale et al. 2013). According to SAS online document 
-                     https://support.sas.com/documentation/cdl/en/statug/63033/HTML/default/viewer.htm#statug_power_a0000000982.htm, 
-                     the power calculation formula is:"),
-            helpText(" $$power = Pr(F \\ge F_{1-\\alpha}(k-1, N-k) | F\\text{ ~ }F_{k-1, N-k, \\lambda})$$"),
-            helpText(" $$\\lambda = \\frac{N}{\\sigma^2 } \\sum_{i = 1}^k w_i (\\mu_i - \\mu)^2$$"),
-            helpText("$$\\mu = \\sum_{i = 1}^k w_i \\mu_i$$"),
-            helpText("where k = 3 is the number of groups of subjects, N is the total number of subjects."),
-            helpText("More details can be found in the supplementary documents."),
-        
-            tags$h5("Simple Linear Regression"),
-            
-            helpText("Power calculation for eQTL analysis that tests if a SNP is associated to a gene probe by using simple linear regression."),
-            helpText("To test if a SNP is associated with a gene probe, we use the simple linear regression based on Dupont and Plummer (1998):"),
-            helpText(" $$y_{i} = \\gamma + \\lambda  x_i + \\epsilon_{i}$$"),
-            helpText(" $$\\epsilon_{i} \\text{ ~ } N(0, \\rho^2)$$"),
-            helpText("$$i = 1 ... n$$"),
-            helpText("More details can be found in the supplementary documents."),
-            
-            tags$b("References"),
-            tags$br(),
-            
-            paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
-            tags$br(),
-            paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
-            )
-    })
-    
     
     ## Approximate sample sizes with given inputs
-    # ANOVA model
-    # output$radio = renderUI{
-    #     radioButtons(inputId = "models", label = "Tissue eQTL - Select model", choices = c("One-way unbalanced anova", "Simple linear regression"))
-    # }
-    
-    ## Check inputs
-    maf.data <- reactive({
-        shiny::validate(need((!is.na(input$maf2)),
-                             "Need parameters MAF not empty"))
-        input$maf2
-    })
-    power.data <- reactive({
-        shiny::validate(need((!is.na(input$power) && input$power <= 1 && input$power >= 0),
-                             "Need parameters power not emptyand in range [0, 1]"))
-        input$power
-    })
-    eSize.data <- reactive({
-        shiny::validate(need((!is.na(input$eSize)),
-                             "Need parameters effect Size not empty"))
-        input$eSize
-    })
-    m.data <- reactive({
-        shiny::validate(need((!is.na(input$m3)),
-                             "Need parameters m not empty"))
-        input$m3
-    })
-    rho.data <- reactive({
-        shiny::validate(need((!is.na(input$rho3) && input$rho3 <= 1 && input$rho3 >= 0),
-                             "Need parameters intra-class correlation not empty and in range [0, 1]"))
-        input$rho3
-    })
-    
-    ## First start from an initial guess: n = 100
-    ## Then increment n by 100 in each iteration to approximate n when power level approaches input with error < 0.001
-    ## Each time power level > input, cut increment value by 1/2
-    ## Power level shall be < 1.0
-    output$approx <- renderTable({
+    # observeEvent(input$MAF_sc,{
+    #     updateSliderInput()
+    # })
+    sc_est <- reactive({
         n=uniroot(f=diffPower4ss.ANOVA,
-                         interval = c(10, 1e30),
-                         MAF=maf.data(),
-                         delta=eSize.data() * 0.2,
-                         power=power.data(),
-                         sigma=0.2,
-                         FWER=0.05,
-                         nTests=200000
+                  interval = c(10, 1e30),
+                  MAF=input$maf_est,
+                  deltaVec=c(input$slope_est, input$slope1_est),
+                  power=input$power_est,
+                  sigma=input$sigma_est,
+                  FWER=input$FWER_est,
+                  nTests=input$nTest_est
         )
-        
+
         n2=uniroot(f=diffPower4ss.SLR,
-                  interval = c(10, 1e30),
-                  MAF=maf.data(),
-                  slope=eSize.data() * 0.2,
-                  power=power.data(),
-                  sigma=0.2,
-                  FWER=0.05,
-                  nTests=200000
+                   interval = c(10, 1e30),
+                   MAF=input$maf_est,
+                   slope=input$slope_est,
+                   power=input$power_est,
+                   sigma=input$sigma_est,
+                   FWER=input$FWER_est,
+                   nTests=input$nTest_est
         )
         
+        # updateSliderInput(inputId = "n_est", label = "Number_of_subjects_needed",
+        #                   value = 100, min = 10, max = 1e30)
         data.frame(Model_used = c("One-way unbalanced Anova", "Simple Linear Regression"),
-                   Number_of_subjects_needed = c(n$root, n2$root),
-                   Minor_Allele_Frequency = rep(input$maf2,2),
-                   Power_level = rep(input$power,2),
-                   eQTL_effect_size = rep(input$eSize,2)
-                   )
+                   Number_of_subjects_needed = c(ceiling(n$root), ceiling(n2$root)),
+                   Minor_Allele_Frequency = rep(input$maf_est,2),
+                   Power_level = rep(input$power_est,2),
+                   δ = c(paste0(input$slope_est, ", ", input$slope1_est),input$slope_est),
+                   σ = rep(input$sigma_est,2)
+        )
     })
-    
-    output$approx1 <- renderTable({
+    t_est <- reactive({
         n=uniroot(f=diffPower4ss.scRNAseq,
-                  interval = c(10, 1e30),
-                  MAF=maf.data(),
-                  m=m.data(),
-                  rho=rho.data(),
-                  slope=eSize.data() * 0.2,
-                  power=power.data(),
-                  sigma=0.2,
-                  FWER=0.05,
-                  nTests=200000
+                  interval = c(1, 1e30),
+                  MAF=input$maf_est,
+                  m=input$m_est,
+                  rho=input$rho_est,
+                  slope=input$slope_est,
+                  power=input$power_est,
+                  sigma=input$sigma_est,
+                  FWER=input$FWER_est,
+                  nTests=input$nTest_est
         )
         
         data.frame(Model_used = c("Simple linear mixed effects model"),
-                   No_subjects_needed = n$root,
-                   Minor_Allele_Frequency = input$maf2,
-                   Power_level = input$power,
-                   eQTL_effect_size = input$eSize,
-                   m = input$m3,
-                   Intra_class_correlation = input$rho3
+                   No_subjects_needed = ceiling(n$root),
+                   Minor_Allele_Frequency = input$maf_est,
+                   Power_level = input$power_est,
+                   slope = input$slope_est,
+                   σ = input$sigma_est,
+                   m = input$m_est,
+                   ρ = input$rho_est
         )
     })
+    output$approx <- renderTable(sc_est())
+    output$approx1 <- renderTable(t_est())
     
+    ##Explanation for Sample Estimation
     output$title <- renderUI(tags$h5("Tissue eQTL"))
-    
     output$title1 <- renderUI(tags$div(tags$br(), tags$h5("Single-cell eQTL")))
-    
     output$Explanation <- renderUI({
         tags$div(
-            withMathJax(),
             tags$br(),
-            helpText("alpha = Family Type-I Error Rate / Number of Tests = 0.05 / 200000 = 5e^-8"),
-            # tags$br(),
-            helpText("eQTL effect size = mean difference of gene expression levels between groups(delta) / standard deviation of gene expression levels(sigma)"),
+            paste0("alpha = Family Type-I Error Rate / Number of Tests =", input$FWER_est," /", input$nTest_est," = ", input$FWER_est/input$nTest_est),
+            tags$br(),
+            paste0("eQTL effect size = mean difference of gene expression levels between groups(delta) / standard deviation of gene expression levels(sigma)"),
+            tags$br(),
+            tags$br(),
+            paste0("These tables uses function ‘ssEQTL.ANOVA’, 'ssEQTL.scRNAseq', and 'ssEQTL.SLR' in R package "),
+            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+            paste0(". More details can be found in the online manual of the function ‘ssEQTL.ANOVA’, 'ssEQTL.scRNAseq', and 'ssEQTL.SLR' in R package "),
+            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+            tags$br(),
+            tags$br(),
+            
             tags$b("References"),
             tags$br(),
             
-            paste("Dong X, Xiaoqi L., and Qiu W. Power Calculation for Association Between Genotype and Gene Expression Based on Single Cell RNAseq Data. manuscript. (2020)"),
+            paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
+               sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
             tags$br(),
             paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
             tags$br(),
@@ -638,75 +760,3 @@ function(input, output) {
             )
     })
 }
-
-
-
-# 
-# if (input$models == "One-way unbalanced anova")
-# {
-#     numericInput(inputId = "n2", label = "Sample size (n)",
-#                  value = 640, min = 0)
-#     numericInput(inputId = "maf2", label = "Minor allele frequencies (between 0 and 0.5)",
-#                  value = 0.02)
-#     numericInput(inputId = "power", label = "Desired Power level",
-#                  value = 0.8, min = 0, max = 1)
-#     
-#     submitButton("submit")
-#     
-#     tableOutput("tANOVA")
-# }
-# if (input$models == "Simple linear regression")
-# {
-#     numericInput(inputId = "n2", label = "Sample size (n)",
-#                  value = 640, min = 0)
-#     numericInput(inputId = "maf2", label = "Minor allele frequencies (between 0 and 0.5)",
-#                  value = 0.02)
-#     numericInput(inputId = "power", label = "Desired Power level",
-#                  value = 0.8, min = 0, max = 1)
-#     numericInput(inputId = "delta2", label = "eQTL effect size", 
-#                  value = 0.29*1.5)
-#     
-#     submitButton("submit")
-#     
-#     tableOutput("tSLR")
-#     
-# }
-
-
-# 
-# # n & inc & approx for single cell eqtl
-# # n2 & inc2 & approx2 for tissue eqtl
-# n <- 100
-# n2 <- 100
-# inc <- 100
-# inc2 <- 100
-# approx <- power.eQTL.scRNAseq(delta=input$delta2, n=n, m=input$m2,sigma.y=input$sigma2, theta=input$maf2, rho=text1.data(), alpha=input$alpha2)
-# approx2 <- powerEQTL(MAF=input$maf2, alpha=input$alpha2, myntotal=n2, delta = input$delta2)
-# 
-# while (isTRUE(approx - input$power < 0 || approx - input$power > 0.005)) 
-# {
-#     if (approx > input$power)
-#     {
-#         n = n - inc
-#         inc = inc/2
-#     }
-#     n = n + inc
-#     approx = power.eQTL.scRNAseq(delta=input$delta2, n=n, m=input$m2,sigma.y=input$sigma2, theta=input$maf2, rho=text1.data(), alpha=input$alpha2)
-# }
-# 
-# while (isTRUE(approx2 - input$power < 0 || approx2 - input$power > 0.005)) 
-# {
-#     if (approx2 > input$power)
-#     {
-#         n2 = n2 - inc2
-#         inc2 = inc2/2
-#     }
-#     n2 = n2 + inc2
-#     approx2 = powerEQTL(MAF=input$maf2, alpha=input$alpha2, myntotal=n2, delta = input$delta2)
-# }
-# 
-# withMathJax(
-#     helpText("The minium sample size to approximate power level ", input$delta2, "is ", ceiling(n))
-#     ## the outputs for two models are the same
-#     # helpText("The minium sample size to approximate power level using one-way unbalanced ANOVA model", input$delta2, " is ", ceiling(n2))
-# )
