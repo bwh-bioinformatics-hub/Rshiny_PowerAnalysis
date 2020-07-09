@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.4, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="221.567px" height="71.673px" viewBox="0 0 221.567 71.673" enable-background="new 0 0 221.567 71.673"
+	 xml:space="preserve">
+<line fill="none" stroke="#999999" stroke-width="0.5" stroke-miterlimit="10" x1="80.333" y1="38.923" x2="15.855" y2="38.923"/>
+<rect x="47.671" y="36.142" fill="#808080" width="27.329" height="5.877"/>
+<g>
+	<g>
+		<path fill="none" stroke="#B3B3B3" stroke-width="0.75" stroke-miterlimit="10" d="M19.027,32.312
+			c2.048-23.329,40.003-23.77,44.272-1.598"/>
+		<g>
+			<polygon fill="#B3B3B3" points="59.707,28.992 60.127,28.37 63.188,30.444 65.034,27.239 65.685,27.615 63.436,31.517 			"/>
+		</g>
+	</g>
+</g>
+<line fill="none" stroke="#999999" stroke-miterlimit="10" x1="138.316" y1="53.172" x2="138.316" y2="30.104"/>
+<rect x="17.992" y="35.618" width="2.525" height="6.389"/>
+<text transform="matrix(1 0 0 1 50.2314 55.6226)" font-family="'ArialMT'" font-size="11.2567">Gene</text>
+<text transform="matrix(0 -1 1 0 121.9268 46.7402)" font-family="'ArialMT'" font-size="13.5295">Gene</text>
+<text transform="matrix(1 0 0 1 130.1494 65.2666)" font-family="'ArialMT'" font-size="11.2746">AA</text>
+<text transform="matrix(1 0 0 1 156.0586 65.2666)" font-family="'ArialMT'" font-size="11.2746">AC</text>
+<text transform="matrix(1 0 0 1 182.9414 65.2666)" font-family="'ArialMT'" font-size="11.2746">CC</text>
+<text transform="matrix(1 0 0 1 7.7012 55.6226)" font-family="'ArialMT'" font-size="11.2567">SNP</text>
+<line fill="none" stroke="#333333" stroke-width="0.25" stroke-miterlimit="10" x1="127.038" y1="7.432" x2="127.038" y2="54.708"/>
+<line fill="none" stroke="#333333" stroke-width="0.25" stroke-miterlimit="10" x1="127.038" y1="54.708" x2="200.953" y2="54.708"/>
+<g>
+	<g>
+		<line fill="none" stroke="#B3B3B3" stroke-miterlimit="10" x1="89.693" y1="37.349" x2="101.037" y2="37.349"/>
+		<g>
+			<polygon fill="#B3B3B3" points="97.725,41.439 97.042,40.707 100.654,37.35 97.042,33.993 97.725,33.26 102.122,37.35 			"/>
+		</g>
+	</g>
+</g>
+<rect x="134.588" y="32.871" fill="#808080" stroke="#333333" stroke-width="0.25" stroke-miterlimit="10" width="7.267" height="17.827"/>
+<line fill="none" stroke="#999999" stroke-miterlimit="10" x1="162.055" y1="40.483" x2="162.055" y2="17.413"/>
+<rect x="158.326" y="20.181" fill="#808080" stroke="#333333" stroke-width="0.25" stroke-miterlimit="10" width="7.266" height="17.825"/>
+<line fill="none" stroke="#999999" stroke-miterlimit="10" x1="185.792" y1="28.41" x2="185.792" y2="5.341"/>
+<rect x="182.062" y="8.108" fill="#808080" stroke="#333333" stroke-width="0.25" stroke-miterlimit="10" width="7.267" height="17.826"/>
+<line fill="none" stroke="#000000" stroke-miterlimit="10" x1="134.588" y1="41.784" x2="141.855" y2="41.784"/>
+<line fill="none" stroke="#000000" stroke-miterlimit="10" x1="158.421" y1="29.093" x2="165.688" y2="29.093"/>
+<line fill="none" stroke="#000000" stroke-miterlimit="10" x1="182.159" y1="17.244" x2="189.426" y2="17.244"/>
+<circle cx="136" cy="37.922" r="0.469"/>
+<circle cx="138.316" cy="35.816" r="0.469"/>
+<circle cx="138.222" cy="40.077" r="0.469"/>
+<circle cx="139.906" cy="37.922" r="0.469"/>
+<circle cx="136.469" cy="34.601" r="0.469"/>
+<circle cx="135.66" cy="44.211" r="0.469"/>
+<circle cx="137.976" cy="42.105" r="0.469"/>
+<circle cx="137.976" cy="45.149" r="0.469"/>
+<circle cx="139.566" cy="44.211" r="0.469"/>
+<circle cx="140.035" cy="41.359" r="0.469"/>
+<circle cx="136.128" cy="40.89" r="0.469"/>
+<circle cx="136.257" cy="48.001" r="0.469"/>
+<circle cx="138.573" cy="45.895" r="0.469"/>
+<circle cx="138.573" cy="48.939" r="0.469"/>
+<circle cx="140.163" cy="48.001" r="0.469"/>
+<circle cx="140.632" cy="45.149" r="0.469"/>
+<circle cx="159.812" cy="25.529" r="0.469"/>
+<circle cx="162.128" cy="26.467" r="0.469"/>
+<circle cx="163.719" cy="25.529" r="0.469"/>
+<circle cx="164.188" cy="22.677" r="0.469"/>
+<circle cx="160.281" cy="22.208" r="0.469"/>
+<circle cx="159.472" cy="31.818" r="0.469"/>
+<circle cx="161.788" cy="29.712" r="0.469"/>
+<circle cx="161.788" cy="32.756" r="0.469"/>
+<circle cx="163.378" cy="31.818" r="0.469"/>
+<circle cx="163.847" cy="28.966" r="0.469"/>
+<circle cx="159.941" cy="28.497" r="0.469"/>
+<circle cx="160.069" cy="35.608" r="0.469"/>
+<circle cx="162.385" cy="36.546" r="0.469"/>
+<circle cx="163.976" cy="35.608" r="0.469"/>
+<circle cx="164.444" cy="32.756" r="0.469"/>
+<circle cx="187.841" cy="20.723" r="0.469"/>
+<circle cx="185.525" cy="22.83" r="0.469"/>
+<circle cx="185.525" cy="19.786" r="0.469"/>
+<circle cx="183.935" cy="20.723" r="0.469"/>
+<circle cx="183.466" cy="23.576" r="0.469"/>
+<circle cx="187.373" cy="24.044" r="0.469"/>
+<circle cx="188.522" cy="22.106" r="0.469"/>
+<circle cx="186.206" cy="24.213" r="0.469"/>
+<circle cx="186.206" cy="21.169" r="0.469"/>
+<circle cx="184.616" cy="22.106" r="0.469"/>
+<circle cx="184.147" cy="24.959" r="0.469"/>
+<circle cx="188.053" cy="25.428" r="0.469"/>
+<circle cx="188.182" cy="14.434" r="0.469"/>
+<circle cx="185.866" cy="16.541" r="0.469"/>
+<circle cx="185.866" cy="13.497" r="0.469"/>
+<circle cx="184.275" cy="14.434" r="0.469"/>
+<circle cx="183.807" cy="17.287" r="0.469"/>
+<circle cx="187.713" cy="17.755" r="0.469"/>
+<circle cx="187.584" cy="10.644" r="0.469"/>
+<circle cx="185.269" cy="12.75" r="0.469"/>
+<circle cx="185.269" cy="9.707" r="0.469"/>
+<circle cx="183.678" cy="10.644" r="0.469"/>
+<circle cx="183.209" cy="13.497" r="0.469"/>
+<circle cx="187.116" cy="13.965" r="0.469"/>
+<text transform="matrix(-0.504 0 0 1 194.0474 21.9561)" fill="#00A0C6" font-family="'ArialMT'" font-size="19.3321">{</text>
+<text transform="matrix(-0.6109 0 0 1 175.9097 38.2427)" fill="#FF0000" stroke="#FF0000" stroke-width="0.25" stroke-miterlimit="10" font-family="'ArialMT'" font-size="12.1356">{</text>
+<text transform="matrix(1 0 0 1 195.3154 20.3818)"><tspan x="0" y="0" fill="#00A0C6" font-family="'ArialMT'" font-size="9">1.35</tspan><tspan x="17.517" y="0" fill="#00A0C6" font-family="'Symbol'" font-size="9">s</tspan><tspan x="22.944" y="0" fill="#00A0C6" font-family="'ArialMT'" font-size="9"> </tspan></text>
+<text transform="matrix(1 0 0 1 177.7222 37.5146)"><tspan x="0" y="0" fill="#FF0000" font-family="'Symbol'" font-size="9">d</tspan><tspan x="4.447" y="0" fill="#FF0000" font-family="'ArialMT'" font-size="9"> </tspan></text>
+<line fill="none" stroke="#FF0000" stroke-width="0.5" stroke-miterlimit="10" stroke-dasharray="2" x1="141.835" y1="41.565" x2="171.287" y2="41.438"/>
+<line fill="none" stroke="#FF0000" stroke-width="0.5" stroke-miterlimit="10" stroke-dasharray="2" x1="158.294" y1="29.279" x2="172.001" y2="29.152"/>
+</svg>

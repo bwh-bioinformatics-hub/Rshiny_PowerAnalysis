@@ -3,6 +3,9 @@ library(shinyjs)
 library(devtools)
 
 source("./global.R")
+source("./package/ssEQTL.ANOVA.R")
+source("./package/ssEQTL.SLR.R")
+source("./package/ssEQTL.scRNAseq.R")
 
 function(input, output, session) {
     
@@ -668,81 +671,362 @@ function(input, output, session) {
         )
     })
     
+    ## Power calculator for single-cell eQTL
+    ## hidden input options
+    observeEvent(input$btn_scest, {
+        toggle("sigma_est")
+        toggle("FWER_est")
+        toggle("nTest_est")
+        toggle("rho_est")
+        toggle("m_est")
+    })
     ## Approximate sample sizes with given inputs
-    # observeEvent(input$MAF_sc,{
-    #     updateSliderInput()
-    # })
-    sc_est <- reactive({
-        n=uniroot(f=diffPower4ss.ANOVA,
-                  interval = c(10, 1e30),
-                  MAF=input$maf_est,
-                  deltaVec=c(input$slope_est, input$slope1_est),
-                  power=input$power_est,
-                  sigma=input$sigma_est,
-                  FWER=input$FWER_est,
-                  nTests=input$nTest_est
-        )
-
-        n2=uniroot(f=diffPower4ss.SLR,
-                   interval = c(10, 1e30),
-                   MAF=input$maf_est,
-                   slope=input$slope_est,
-                   power=input$power_est,
-                   sigma=input$sigma_est,
-                   FWER=input$FWER_est,
-                   nTests=input$nTest_est
-        )
+    observeEvent(input$power_est,{
+        max = powerEQTL.scRNAseq(
+            slope = input$slope_est, 
+            n = NULL,
+            m = input$m_est, 
+            power = 0.99999,
+            sigma.y = input$sigma_est, 
+            MAF = input$maf_est, 
+            rho = input$rho_est, 
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        n = powerEQTL.scRNAseq(
+            slope = input$slope_est, 
+            n = NULL,
+            m = input$m_est, 
+            power = input$power_est,
+            sigma.y = input$sigma_est, 
+            MAF = input$maf_est, 
+            rho = input$rho_est, 
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+                          value = as.numeric(n), max = ceiling(as.numeric(max)))
+    })
+    observeEvent(input$n_est,{
+        power = powerEQTL.scRNAseq(
+            power = NULL,
+            slope = input$slope_est,
+            m = input$m_est,
+            n = input$n_est,
+            sigma.y = input$sigma_est,
+            MAF = input$maf_est,
+            rho = input$rho_est,
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        updateSliderInput(session, inputId = "power_est", label = "Desired power level",
+                          value = as.numeric(power), min = 0.001, max = 1)
+    })
+    observeEvent(input$maf_est,{
+        max = powerEQTL.scRNAseq(
+            slope = input$slope_est, 
+            n = NULL,
+            m = input$m_est, 
+            power = 0.99999,
+            sigma.y = input$sigma_est, 
+            MAF = input$maf_est, 
+            rho = input$rho_est, 
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        n = powerEQTL.scRNAseq(
+            slope = input$slope_est,
+            n = NULL,
+            m = input$m_est,
+            power = input$power_est,
+            sigma.y = input$sigma_est,
+            MAF = input$maf_est,
+            rho = input$rho_est,
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+                          value = as.numeric(n), max = ceiling(as.numeric(max)))
+    })
+    observeEvent(input$slope_est,{
+        max = powerEQTL.scRNAseq(
+            slope = input$slope_est, 
+            n = NULL,
+            m = input$m_est, 
+            power = 0.99999,
+            sigma.y = input$sigma_est, 
+            MAF = input$maf_est, 
+            rho = input$rho_est, 
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        n = powerEQTL.scRNAseq(
+            slope = input$slope_est,
+            n = NULL,
+            m = input$m_est,
+            power = input$power_est,
+            sigma.y = input$sigma_est,
+            MAF = input$maf_est,
+            rho = input$rho_est,
+            FWER = input$FWER_est,
+            nTests = input$nTest_est)
+        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+                          value = as.numeric(n), max = ceiling(as.numeric(max)))
+    })
+    
+    ## Power calculator for tissue eQTL
+    ## hidden input options
+    observeEvent(input$btn_test, {
+        toggle("delta1_test")
+        toggle("delta2_test")
+        toggle("sigma_test")
+        toggle("FWER_test")
+        toggle("nTest_test")
+    })
+    # Reactive Input Title for delta for different models
+    observeEvent(input$radio_test,{
+        if(input$radio_test == "One-way unbalanced ANOVA")
+        {
+            hide("slope_test")
+            max = powerEQTL.ANOVA(
+                n = NULL,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = 0.999,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.ANOVA(
+                n = NULL,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = input$power_test,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = as.numeric(n), max = ceiling(as.numeric(max)))
+        }
+        else
+        {
+            show("slope_test")
+            max = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = 0.999,
+                sigma.y = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = input$power_test,
+                sigma.y = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = as.numeric(n), max = ceiling(as.numeric(max)))
+        }
+    })
+    
+    ## Approximate sample sizes with given inputs
+    observeEvent(input$power_test,{
+        if(input$radio_test == "One-way unbalanced ANOVA")
+        {
+            max = powerEQTL.ANOVA(
+                n = NULL,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = 0.999,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.ANOVA(
+                n = NULL,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = input$power_test,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = as.numeric(n), max = ceiling(as.numeric(max)))
+        }
+        else
+        {
+            max = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = 0.999,
+                sigma.y = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = input$power_test,
+                sigma.y = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = as.numeric(n), max = ceiling(as.numeric(max)))
+        }
+    })
+    observeEvent(input$maf_test,{
+        if(input$radio_test == "One-way unbalanced ANOVA")
+        {
+            max = powerEQTL.ANOVA(
+                n = NULL,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = 0.999,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.ANOVA(
+                n = NULL,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = input$power_test,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+        }
+        else
+        {
+            max = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = 0.999,
+                sigma.y = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = input$power_test,
+                sigma.y = input$sigma_test, 
+                MAF = input$maf_test, 
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+        }
+    })
+    observeEvent(input$slope_test,{
+        if(input$radio_test != "One-way unbalanced ANOVA")
+        {
+            max = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = 0.999,
+                sigma.y = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            n = powerEQTL.SLR(
+                n = NULL,
+                slope = input$slope_test,
+                power = input$power_test,
+                sigma.y = input$sigma_test, 
+                MAF = input$maf_test, 
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+        }
+    })
+    observeEvent(input$n_test,{
+        if(input$radio_test == "One-way unbalanced ANOVA")
+        {
+            p = powerEQTL.ANOVA(
+                n = input$n_test,
+                deltaVec = c(input$delta1_test, input$delta2_test),
+                power = NULL,
+                sigma = input$sigma_test,
+                MAF = input$maf_test,
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            updateSliderInput(session, inputId = "power_test", label = "Desired power level",
+                              value = round(as.numeric(p),2))
+        }
+        else
+        {
+            p = powerEQTL.SLR(
+                n = input$n_test,
+                slope = input$slope_test,
+                power = NULL,
+                sigma.y = input$sigma_test, 
+                MAF = input$maf_test, 
+                FWER = input$FWER_test,
+                nTests = input$nTest_test)
+            updateSliderInput(session, inputId = "power_test", label = "Desired power level",
+                              value = round(as.numeric(p),2))
+        }
         
+    })
+    
+    t_est <- reactive({
         # updateSliderInput(inputId = "n_est", label = "Number_of_subjects_needed",
         #                   value = 100, min = 10, max = 1e30)
-        data.frame(Model_used = c("One-way unbalanced Anova", "Simple Linear Regression"),
-                   Number_of_subjects_needed = c(ceiling(n$root), ceiling(n2$root)),
-                   Minor_Allele_Frequency = rep(input$maf_est,2),
-                   Power_level = rep(input$power_est,2),
-                   δ = c(paste0(input$slope_est, ", ", input$slope1_est),input$slope_est),
-                   σ = rep(input$sigma_est,2)
-        )
+        if (input$radio_test == "One-way unbalanced ANOVA")
+        {
+            tab <- data.frame(c(input$radio_test, input$n_test, 
+                                input$maf_test, input$power_test, 
+                                paste0(input$delta1_test, ", ", input$delta2_test), 
+                                input$sigma_test))
+            rownames(tab)<-c("<strong>Model used</strong>","<strong>Number of subjects needed</strong>",
+                             "<strong>Minor Allele Frequency (MAF)</strong>", "<strong>Power level</strong>", 
+                             "<strong>Mean differences of gene expression levels between genotype classes (δ;δ2)</strong>",
+                             "<strong>Standard deviation of gene expression levels in one group of subjects (σ)</strong>")
+            
+            # rownames(tab)<-c("Model_used","Number_of_subjects_needed","Minor_Allele_Frequency", "Power_level", "δ", "σ")
+        }
+        else
+        {
+             tab <- data.frame(c(input$radio_test, input$n_test, input$maf_test,
+                                 input$power_test, input$slope_test, input$sigma_test))
+            rownames(tab)<-c("<strong>Model used</strong>","<strong>Number of subjects needed</strong>",
+                             "<strong>Minor Allele Frequency (MAF)</strong>", "<strong>Power level</strong>", 
+                             "<strong>Slope of the regression line (β)</strong>",
+                             "<strong>Standard deviation of gene expression levels in one group of subjects (σ)</strong>")
+
+        }
+        tab
     })
-    t_est <- reactive({
-        n=uniroot(f=diffPower4ss.scRNAseq,
-                  interval = c(1, 1e30),
-                  MAF=input$maf_est,
-                  m=input$m_est,
-                  rho=input$rho_est,
-                  slope=input$slope_est,
-                  power=input$power_est,
-                  sigma=input$sigma_est,
-                  FWER=input$FWER_est,
-                  nTests=input$nTest_est
-        )
-        
-        data.frame(Model_used = c("Simple linear mixed effects model"),
-                   No_subjects_needed = ceiling(n$root),
-                   Minor_Allele_Frequency = input$maf_est,
-                   Power_level = input$power_est,
-                   slope = input$slope_est,
-                   σ = input$sigma_est,
-                   m = input$m_est,
-                   ρ = input$rho_est
-        )
+    sc_est <- reactive({
+        tab <- data.frame(c("Simple linear mixed effects model", ceiling(input$n_est),
+                            input$maf_est, input$power_est, input$slope_est,
+                            input$sigma_est, input$m_est, input$rho_est))
+        rownames(tab)<-c("<strong>Model used</strong>","<strong>Number of subjects needed</strong>",
+                         "<strong>Minor Allele Frequency (MAF)</strong>", "<strong>Power level</strong>", 
+                         "<strong>Slope of the regression line (β)</strong>",
+                         "<strong>Standard deviation of gene expression levels in one group of subjects (σ)</strong>",
+                         "<strong>Intra-class correlation (ρ)</strong>",
+                         "<strong>Number of cells from each subject (m)</strong>")
+        tab
     })
-    output$approx <- renderTable(sc_est())
-    output$approx1 <- renderTable(t_est())
+    output$approx <- renderTable(t_est(), rownames = TRUE, colnames = FALSE, sanitize.text.function=function(x){x})
+    output$approx1 <- renderTable(sc_est(), rownames = TRUE, colnames = FALSE, sanitize.text.function=function(x){x})
     
     ##Explanation for Sample Estimation
     output$title <- renderUI(tags$h5("Tissue eQTL"))
     output$title1 <- renderUI(tags$div(tags$br(), tags$h5("Single-cell eQTL")))
     output$Explanation <- renderUI({
         tags$div(
+            # tags$br(),
+            # paste0("alpha = Family Type-I Error Rate / Number of Tests =", input$FWER_est," /", input$nTest_est," = ", input$FWER_est/input$nTest_est),
+            # tags$br(),
+            # paste0("eQTL effect size = mean difference of gene expression levels between groups(delta) / standard deviation of gene expression levels(sigma)"),
+            # tags$br(),
             tags$br(),
-            paste0("alpha = Family Type-I Error Rate / Number of Tests =", input$FWER_est," /", input$nTest_est," = ", input$FWER_est/input$nTest_est),
-            tags$br(),
-            paste0("eQTL effect size = mean difference of gene expression levels between groups(delta) / standard deviation of gene expression levels(sigma)"),
-            tags$br(),
-            tags$br(),
-            paste0("These tables uses function ‘ssEQTL.ANOVA’, 'ssEQTL.scRNAseq', and 'ssEQTL.SLR' in R package "),
+            paste0("These tables uses function 'ssEQTL.scRNAseq' in R package "),
             tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-            paste0(". More details can be found in the online manual of the function ‘ssEQTL.ANOVA’, 'ssEQTL.scRNAseq', and 'ssEQTL.SLR' in R package "),
+            paste0(". More details can be found in the online manual of the function 'ssEQTL.scRNAseq' in R package "),
             tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
             tags$br(),
             tags$br(),
@@ -752,11 +1036,38 @@ function(input, output, session) {
             
             paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
                sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
+            # tags$br(),
+            # paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
+            # tags$br(),
+            # paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
+            
+            )
+    })
+    output$Explanation1 <- renderUI({
+        tags$div(
+            # tags$br(),
+            # paste0("alpha = Family Type-I Error Rate / Number of Tests =", input$FWER_test," /", input$nTest_test," = ", input$FWER_test/input$nTest_test),
+            # tags$br(),
+            # paste0("eQTL effect size = mean difference of gene expression levels between groups(delta) / standard deviation of gene expression levels(sigma)"),
+            # tags$br(),
             tags$br(),
+            paste0("These tables uses function ‘ssEQTL.ANOVA’, and 'ssEQTL.SLR' in R package "),
+            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+            paste0(". More details can be found in the online manual of the function ‘ssEQTL.ANOVA’ and 'ssEQTL.SLR' in R package "),
+            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+            tags$br(),
+            tags$br(),
+            
+            tags$b("References"),
+            tags$br(),
+            
+            # paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
+            #    sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
+            # tags$br(),
             paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
             tags$br(),
             paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
             
-            )
+        )
     })
 }
