@@ -96,17 +96,4 @@
 <circle cx="183.678" cy="10.644" r="0.469"/>
 <circle cx="183.209" cy="13.497" r="0.469"/>
 <circle cx="187.116" cy="13.965" r="0.469"/>
-<text transform="matrix(0.504 0 0 1 177.7229 21.9565)" fill="#00A0C6" font-family="'ArialMT'" font-size="19.3321">{</text>
-<text transform="matrix(-0.6109 0 0 1 175.467 38.9224)" fill="#FF0000" font-family="'ArialMT'" font-size="12.1356">{</text>
-<text transform="matrix(1 0 0 1 152.5237 13.9658)" fill="#00A0C6" font-family="'ArialMT'" font-size="9">1.35</text>
-<text transform="matrix(1 0 0 1 170.0413 13.9658)" fill="#00A0C6" font-family="'Symbol'" font-size="9">s</text>
-<text transform="matrix(1 0 0 1 175.467 13.9658)" fill="#00A0C6" font-family="'ArialMT'" font-size="9"> </text>
-<text transform="matrix(1 0 0 1 177.7229 38.3911)" fill="#FF0000" font-family="'Symbol'" font-size="9">d1</text>
-<text transform="matrix(1 0 0 1 182.1702 38.3911)" fill="#FF0000" font-family="'ArialMT'" font-size="9"> </text>
-<line fill="none" stroke="#FF0000" stroke-width="0.5" stroke-miterlimit="10" stroke-dasharray="2" x1="141.835" y1="41.565" x2="171.287" y2="41.438"/>
-<line fill="none" stroke="#FF0000" stroke-width="0.5" stroke-miterlimit="10" stroke-dasharray="2" x1="158.294" y1="29.279" x2="196.533" y2="29.152"/>
-<text transform="matrix(-0.6109 0 0 1 201.4924 26.1831)" fill="#FF0000" font-family="'ArialMT'" font-size="12.1356">{</text>
-<text transform="matrix(1 0 0 1 203.3049 25.4556)" fill="#FF0000" font-family="'Symbol'" font-size="9">d2</text>
-<text transform="matrix(1 0 0 1 207.7522 25.4556)" fill="#FF0000" font-family="'ArialMT'" font-size="9"> </text>
-<line fill="none" stroke="#FF0000" stroke-width="0.5" stroke-miterlimit="10" stroke-dasharray="2" x1="183.876" y1="17.219" x2="197.583" y2="17.092"/>
 </svg>

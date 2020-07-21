@@ -8,7 +8,8 @@ fixedPage(
     tags$head(
         tags$link(rel = "stylesheet", type = "text/css", href = "jumbotron-narrow.css"),
         tags$link(rel = "stylesheet", type = "text/css", href = "style.css"),
-        tags$link(rel = "shortcut icon", href = "http://www.humanbraincode.org/img/ico/favicon.png")
+        tags$link(rel = "shortcut icon", href = "http://www.humanbraincode.org/img/ico/favicon.png"),
+        tags$script("src"="func.js")
     ),
     
     tags$div(class="header",
@@ -77,7 +78,7 @@ fixedPage(
                                    value = "50, 100, 150, 200, 250, 300"),
                          numericInput(inputId = "m", label = "Number of cells from each subject (m)", 
                                       value = 640, min = 0, step = 100),
-                         numericInput(inputId = "delta", label = "Slope under alternative hypothesis (β)", 
+                         numericInput(inputId = "delta", label = "Slope under alternative hypothesis (β1)", 
                                       value = 0.29*1.5, min = 0.001, max = 1, step = 0.001),
                          numericInput(inputId = "sigma", 
                                       label = "Standard deviation of gene expression (σ)", 
@@ -104,9 +105,6 @@ fixedPage(
                          
                          plotOutput(outputId = "cell", hover = "sc_plot_hover", width = "750px", height = "450px"),
                          
-                         
-                         # tags$br(),
-                         
                          htmlOutput("description"),
                          tags$br(),
                          
@@ -120,14 +118,14 @@ fixedPage(
                  sidebarLayout(
                      sidebarPanel(
                          sliderInput(inputId = "power_test", label = "Desired power level",
-                                     value = 0.69, min = 0.001, max = 1),
-                         sliderInput(inputId = "n_test", label = "Number_of_subjects_needed",
-                                     value = 1115, min = 10, max = 1000),
+                                     value = 0.8, min = 0.001, max = 1),
+                         sliderInput(inputId = "n_test", label = "Number of subjects needed",
+                                     value = 1114, min = 10, max = 10000),
                          sliderInput(inputId = "maf_test", label = "Minor allele frequencies (between 0 and 0.5)",
                                      value = 0.02, min = 0.001, max = 0.5),
                          
                          hidden(
-                             sliderInput(inputId = "slope_test", label = "Slope of the regression line (β)",
+                             sliderInput(inputId = "slope_test", label = "Slope of the regression line (β1)",
                                          value = 0.2, min = 0.01, max = 1)
                          ),
                          
@@ -171,7 +169,7 @@ fixedPage(
                                      value = 507, min = 10, max = 1000),
                          sliderInput(inputId = "maf_est", label = "Minor allele frequencies (between 0 and 0.5)",
                                      value = 0.02, min = 0.001, max = 0.5),
-                         sliderInput(inputId = "slope_est", label = "Slope under alternative hypothesis (β)",
+                         sliderInput(inputId = "slope_est", label = "Slope under alternative hypothesis (β1)",
                                      value = 0.2, min = 0.01, max = 1),
                          
                          actionButton("btn_scest", "More Options"),
@@ -198,7 +196,7 @@ fixedPage(
                      )
                  )
         ),
-        tabPanel("About",
+        tabPanel("About", value = "about",
                  htmlOutput("about")
         )
     ),
