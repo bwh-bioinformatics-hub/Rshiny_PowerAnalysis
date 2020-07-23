@@ -155,7 +155,7 @@ function(input, output, session) {
             
             # img(src='eQTL_demo_SLR.png', align = "center", width = "550px", height = "170px"),
             # tags$br(),
-            paste("To test if a SNP is associated with a gene expression level, we use the simple linear regression:"),
+            paste("To test if a SNP is linearly associated with a gene expression level, we use the simple linear regression:"),
             helpText(" $$y_{i} = \\beta_0 + \\beta_1  x_i + \\epsilon_{i}$$"),
             helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2_{\\epsilon})$$"),
             helpText("$$i = 1 ... n$$"),
@@ -174,7 +174,7 @@ function(input, output, session) {
             helpText("$$power = 1 - T_{n-2, \\lambda}[t_{n-2}(\\alpha/2)] + T_{n-2, \\lambda}[-t_{n-2}(\\alpha/2)]$$"),
             HTML(paste0("where T", tags$sub("n−2,λ"), "(a) is the value at a of the cumulative distribution function of non-central t distribution with (n − 2)
                     degrees of freedom and non-centrality parameter λ. λ can be written as: ")),
-            helpText("$$ \\lambda = \\frac{\\beta_1}{\\sqrt{(\\sigma^2 - \\beta_1^2 2pq) / (n-1)2pq}} $$"),
+            helpText("$$ \\lambda = \\frac{\\beta_1}{\\sqrt{(\\sigma_y^2 - \\beta_1^2 2pq) / [(n-1)2pq]}} $$"),
             paste0("p is the minor allele frequency (MAF) and q = 1-p."),
             # helpText("$$\\text{The unstandardized effect size as } \\beta_1", "\\text{, and
             #                 the standardized effect size equal to } \\frac{\\beta_1}{\\tau} \\text{, where }\\tau = \\frac{\\sigma}{\\sigma_x} \\text{ is the
@@ -214,6 +214,8 @@ function(input, output, session) {
             tags$b("References"),
             tags$br(),
             
+            paste0("O'Brien RG Muller KE. Unified power analysis for t-tests through multivariate hypotheses. Applied Analysis of Variance in the Behavioral Sciences, 297–344, 1993. "),
+            tags$br(),
             paste0("The GTEx Consortium. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013."),
             tags$br(),
             tags$br(),
@@ -412,14 +414,14 @@ function(input, output, session) {
                             allele frequency (MAF) with different sample size. Unbalanced one-way ANOVA test was used 
                             to test the potential nonlinear association of genotype classes to expression level, as Ref.
                             (GTEx consortium, Nature Genetics, 2013). We model the tansformed expression data (e.g. using
-                            log transformation) as distributed with a standard deviation of ", input$sigma1, " (we assume
+                            log transformation) as normally distributed with a standard deviation of ", input$sigma1, " (we assume
                             that each genotype class of subjects have the same standard deviation). This level of noise 
-                            can be based on estimates from previous study or pilot data. 
-                            The effect size depends both on the MAF of the SNPs and the actual log expression change between
-                            genotype classes (denoted by δ1 and δ2). In this case, when δ1 = δ2 = δ, δ = ", input$delta1, " and 
-                            standard deviation = ", input$sigma1, " is equivalent to detecting a ", input$delta1/input$sigma1,
-                            "-fold (", input$delta1/input$sigma1, " = ",  input$delta1, "/", input$sigma1, ") of expression 
-                            level chance across the genotype classes. "),
+                            can be based on estimates from previous study or pilot data. "),
+                    # paste0("The effect size depends both on the MAF of the SNPs and the actual log expression change between
+                    #         genotype classes (denoted by δ1 and δ2). In this case, when δ1 = δ2 = δ, δ = ", input$delta1, " and 
+                    #         standard deviation = ", input$sigma1, " is equivalent to detecting a ", input$delta1/input$sigma1,
+                    #         "-fold (", input$delta1/input$sigma1, " = ",  input$delta1, "/", input$sigma1, ") of expression 
+                    #         level chance across the genotype classes. "),
                     # paste0(" The standardized effect size is ", 
                     #         input$delta1/input$sigma1," in this example."),
                     tags$br(),
@@ -449,8 +451,7 @@ function(input, output, session) {
                     
                     paste0("The figure above shows the statistical power of an eQTL analysis as a function of the minor
                             allele frequency (MAF) with different sample size.  Simple linear regression model was used 
-                            to test the linear association between gene expression and genotype, as Ref. (Dupont et al. 
-                            1998). We assume expression levels are normally distributed after appropriate pre-processing.
+                            to test the linear association between gene expression and genotype.
                             In this example, we model the expression data as log-normally distributed with a log standard
                             deviation of ", input$sigma1, ". This level of noise can be based on estimates from previous
                             study or pilot data. "),
@@ -736,7 +737,7 @@ function(input, output, session) {
             rho = input$rho_est, 
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$n_est,{
@@ -774,7 +775,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$slope_est,{
@@ -798,7 +799,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$sigma_est,{
@@ -822,7 +823,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$FWER_est,{
@@ -846,7 +847,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$nTest_est,{
@@ -870,7 +871,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$rho_est,{
@@ -894,7 +895,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     observeEvent(input$m_est,{
@@ -918,7 +919,7 @@ function(input, output, session) {
             rho = input$rho_est,
             FWER = input$FWER_est,
             nTests = input$nTest_est)
-        updateSliderInput(session, inputId = "n_est", label = "Number_of_subjects_needed",
+        updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
     })
     
@@ -959,8 +960,22 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
+            
+            output$Explanation1 <- renderUI({
+                tags$div(
+                    tags$br(),
+                    paste0("The table uses function 'powerEQTL.ANOVA' in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    paste0(". More details can be found "),
+                    HTML("<a onclick=","customHref('about')>here</a>"),
+                    paste0("and in the online manual of the function 'powerEQTL.ANOVA' in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$br(),
+                    tags$br(),
+                )
+            })
         }
         else
         {
@@ -981,8 +996,35 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
+            
+            output$Explanation1 <- renderUI({
+                tags$div(
+                    tags$br(),
+                    paste0("The table uses function 'powerEQTL.SLR' in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    paste0(". More details can be found "),
+                    HTML("<a onclick=","customHref('about')>here</a>"),
+                    paste0("and in the online manual of the function 'powerEQTL.SLR' in R package "),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$br(),
+                    tags$br(),
+                    
+                    # tags$b("References"),
+                    # tags$br(),
+                    # 
+                    # paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
+                    #    sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
+                    # tags$br(),
+                    # paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
+                    # tags$br(),
+                    # paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
+                    
+                )
+            })
+            
+            
         }
     })
     
@@ -1007,7 +1049,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
         }
         else
@@ -1028,7 +1070,7 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
         }
     })
@@ -1052,7 +1094,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1073,7 +1115,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1096,7 +1138,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1149,7 +1191,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1170,7 +1212,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1194,7 +1236,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1215,7 +1257,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1239,7 +1281,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1260,7 +1302,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1284,7 +1326,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1305,7 +1347,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1329,7 +1371,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1350,7 +1392,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number_of_subjects_needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1366,7 +1408,7 @@ function(input, output, session) {
                              "<strong>Number of subjects needed</strong>",
                              "<strong>Minor Allele Frequency (MAF)</strong>", 
                              "<strong>Mean differences of gene expression (δ1;δ2)</strong>",
-                             "<strong>Standard deviation of gene expression (σ)</strong>",
+                             "<strong>Standard deviation of gene expression (σ<sub>y</sub>)</strong>",
                              "<strong>Family-wise type I error rate (FWER)</strong>",
                              "<strong>Total number of tests (nTests)</strong>")
         }
@@ -1379,7 +1421,7 @@ function(input, output, session) {
                              "<strong>Number of subjects needed</strong>",
                              "<strong>Minor Allele Frequency (MAF)</strong>", 
                              "<strong>Slope of the regression line (β1)</strong>",
-                             "<strong>Standard deviation of gene expression (σ)</strong>",
+                             "<strong>Standard deviation of gene expression (σ<sub>y</sub>)</strong>",
                              "<strong>Family-wise type I error rate (FWER)</strong>",
                              "<strong>Total number of tests (nTests)</strong>")
 
@@ -1395,7 +1437,7 @@ function(input, output, session) {
                          "<strong>Number of subjects needed</strong>",
                          "<strong>Minor Allele Frequency (MAF)</strong>", 
                          "<strong>Slope of the regression line (β1)</strong>",
-                         "<strong>Standard deviation of gene expression (σ)</strong>",
+                         "<strong>Standard deviation of gene expression (σ<sub>y</sub>)</strong>",
                          "<strong>Intra-class correlation (ρ)</strong>",
                          "<strong>Number of cells from each subject (m)</strong>",
                          "<strong>Family-wise type I error rate (FWER)</strong>",
@@ -1432,28 +1474,5 @@ function(input, output, session) {
             
             )
     })
-    output$Explanation1 <- renderUI({
-        tags$div(
-            tags$br(),
-            paste0("The table uses function 'powerEQTL.ANOVA' and 'powerEQTL.SLR' in R package "),
-            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-            paste0(". More details can be found "),
-            HTML("<a onclick=","customHref('about')>here</a>"),
-            paste0("and in the online manual of the function 'powerEQTL.ANOVA' and 'powerEQTL.SLR' in R package "),
-            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-            tags$br(),
-            tags$br(),
-            
-            # tags$b("References"),
-            # tags$br(),
-            # 
-            # paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
-            #    sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
-            # tags$br(),
-            # paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
-            # tags$br(),
-            # paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
-            
-        )
-    })
+    
 }
