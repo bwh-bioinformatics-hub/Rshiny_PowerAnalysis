@@ -924,25 +924,16 @@ function(input, output, session) {
     })
     
     ## Power calculator for tissue eQTL
-    ## hidden input options
-    observeEvent(input$btn_test, {
-        toggle("delta1_test")
-        toggle("delta2_test")
-        toggle("sigma_test")
-        toggle("FWER_test")
-        toggle("nTest_test")
-        if (input$btn_test %% 2 == 1) {
-            txt <- "Less Options"
-        } else {
-            txt <- "More Options"
-        }
-        updateActionButton(session, "btn_test", txt)
-    })
     # Reactive Input Title for delta for different models
     observeEvent(input$radio_test,{
         if(input$radio_test == "One-way unbalanced ANOVA")
         {
             hide("slope_test")
+            if (input$btn_test %% 2 == 1) 
+            {
+                toggle("delta1_test")
+                toggle("delta2_test")
+            }
             max = powerEQTL.ANOVA(
                 n = NULL,
                 deltaVec = c(input$delta1_test, input$delta2_test),
@@ -980,6 +971,8 @@ function(input, output, session) {
         else
         {
             show("slope_test")
+            hide("delta1_test")
+            hide("delta2_test")
             max = powerEQTL.SLR(
                 n = NULL,
                 slope = input$slope_test,
@@ -1026,8 +1019,28 @@ function(input, output, session) {
             
             
         }
+
     })
     
+    ## hidden input options
+    observeEvent(input$btn_test, {
+        if(input$radio_test == "One-way unbalanced ANOVA")
+        {
+            toggle("delta1_test")
+            toggle("delta2_test")
+        }
+       
+        toggle("sigma_test")
+        toggle("FWER_test")
+        toggle("nTest_test")
+        if (input$btn_test %% 2 == 1) {
+            txt <- "Less Options"
+        } else {
+            txt <- "More Options"
+        }
+        updateActionButton(session, "btn_test", txt)
+    })
+
     ## Approximate sample sizes with given inputs
     observeEvent(input$power_test,{
         if(input$radio_test == "One-way unbalanced ANOVA")
