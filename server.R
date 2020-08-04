@@ -1,6 +1,5 @@
 library(shiny)
 library(shinyjs)
-library(shinyBS)
 library(devtools)
 
 source("./global.R")
@@ -44,10 +43,10 @@ function(input, output, session) {
     mafLen1 <- reactive(length(mafVec1()))
     
     ## values for sample sizes (tissue eqtl)
-    sizeVec.data <- reactive({as.numeric(unlist(strsplit(as.character(input$myntot), ",")))})
+    sizeVec.data <- reactive({as.numeric(unlist(strsplit(as.character(input$myntot1), ",")))})
     sizeLen.data <- reactive(length(sizeVec.data()))
     # values for sample sizes (single-cell eqtl)
-    sizeVec1.data <- reactive({as.numeric(unlist(strsplit(as.character(input$myntot1), ",")))})
+    sizeVec1.data <- reactive({as.numeric(unlist(strsplit(as.character(input$myntot), ",")))})
     sizeLen1.data <- reactive(length(sizeVec1.data()))
     
     ## validate intra-class correlation
@@ -82,30 +81,7 @@ function(input, output, session) {
         sc
         })
     
-    ## calculate effect sizes
-    effectSize_sc <- reactive({
-        ## LME - linear mixed effect model
-        sigma2.x = 2*mafVec()[ceiling(mafLen()/2)]*(1-mafVec()[ceiling(mafLen()/2)])
-        sigma2.y = input$sigma^2
-        
-        sigma = sqrt(sigma2.y - input$delta^2*sigma2.x)
-        tau = sigma/sqrt(sigma2.x)
-        
-        round(input$delta/tau,2)
-    })
-    effectSize_t <- reactive({
-        ## SLR - simple linear regression
-        sigma2.x = 2*mafVec1()[ceiling(mafLen1()/2)]*(1-mafVec1()[ceiling(mafLen1()/2)])
-        sigma2.y = input$sigma1^2
-        
-        sigma = sqrt(sigma2.y - input$delta1^2*sigma2.x)
-        tau = sigma/sqrt(sigma2.x)
-        
-        round(input$delta1/tau,2)
-    })
-    
-    
-    ##author names
+    ## author names
     output$about <- renderUI({
         tags$div(
             withMathJax(),
@@ -123,13 +99,33 @@ function(input, output, session) {
             tags$br(),
             tags$br(),
             
+            paste0("Single-cell eQTL measures single-cell level gene expression across subjects. Tissue eQTL measures
+                   tissue level gene expression across subjects."),
+            tags$br(),
+            tags$br(),
+            
             
             tags$h4("One-way unbalanced ANOVA model"),
-            
-            # img(src='eQTL_demo_ANOVA.png', align = "center", width = "550px", height = "170px"),
-            # tags$br(),
-            paste0("Power calculation for eQTL analysis that tests if a SNP is associated to a gene expression level by using unbalanced one-way ANOVA, as the 
-                   GTEx consortium used (GTEx consortium, Nature Genetics, 2013)."),
+
+            paste0("Power calculation for eQTL analysis that tests if a SNP is associated to a gene expression level 
+                    by using unbalanced one-way ANOVA, as the GTEx consortium used (GTEx consortium, Nature Genetics, 2013)."),
+            tags$br(),
+            tags$br(),
+            HTML(paste0("Suppose there are k = 3 groups of subjects: (1) mutation homozygotes; (2) heterozygotes; and (3)
+                        wildtype homozygotes. We would like to test if the mean expression &mu;<sub>i</sub>, i = 1, ..., k, of the
+                        gene is the same among the k groups of subjects. We can use the following one-way ANOVA model to characterize
+                        the relationship between observed gene expression level y<sub>ij</sub> and the population mean expression level
+                        &mu;<sub>i</sub>:")),
+            tags$br(),
+            helpText(" $$y_{ij} = \\mu_i + \\epsilon_{ij}$$"),
+            helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2)$$"),
+            helpText("$$i = 1 ... k$$"),
+            helpText("$$j = 1 ... n$$"),
+            HTML(paste0("where y<sub>ij</sub> is the observed gene expression level for the j-th subject in the i-th group, &mu;<sub>i</sub>
+            is the mean gene expression level of the i-th group, &epsilon;<sub>ij</sub> is the random error, k is the number of groups, 
+            n<sub>i</sub> is the number of subjects in the i-th group. Denote the total number of subjects as N = &Sigma;<sup>k</sup><sub>i=1</sub>
+            n<sub>i</sub>. That is, we have n<sub>1</sub> mutation homozygotes, n<sub>2</sub> heterozygotes, and n<sub>3</sub> wildtype homozygotes.")),
+            tags$br(),
             tags$br(),
             paste0("According to O'Brien and Muller (1993), the power calculation formula is:"),
             helpText(" $$power = Pr(F \\ge F_{1-\\alpha}(k-1, N-k) | F\\text{ ~ }F_{k-1, N-k, \\lambda})$$"),
@@ -142,44 +138,33 @@ function(input, output, session) {
                         , and δ",tags$sub("2")," represents the mean difference of gene expression between CC and AC, p is the minor allele frequency, q = 1-p, 
                         and N is the sample size. ")),
             tags$br(),
+            tags$br(),
             HTML(paste("When δ",tags$sub("1")," = δ",tags$sub("2"), " = δ, we have")),
             helpText(" $$\\lambda = 2 p q  N (\\frac{\\delta}{\\sigma})^2$$"),
             paste0("where p is the minor allele frequency, δ is the mean difference of gene expression levels between genotype classes, and σ is 
-                   the standard deviation of gene expression levels in one group of subjects."),
+                   the standard deviation of random error in one group of subjects."),
             tags$br(),
             
-            # helpText("$$\\text{In this case, the standardized effect size as } \\frac{\\delta}{\\sigma} .$$"),
             tags$br(),
 
-            tags$h4("Simple Linear Regression"),
-            
-            # img(src='eQTL_demo_SLR.png', align = "center", width = "550px", height = "170px"),
-            # tags$br(),
+            tags$h4("Simple linear regression"),
+
             paste("To test if a SNP is linearly associated with a gene expression level, we use the simple linear regression:"),
             helpText(" $$y_{i} = \\beta_0 + \\beta_1  x_i + \\epsilon_{i}$$"),
-            helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2_{\\epsilon})$$"),
+            helpText(" $$\\epsilon_{i} \\text{ ~ } N(0, \\sigma^2)$$"),
             helpText("$$i = 1 ... n$$"),
-            HTML(paste0("where y", tags$sub("i"), " is the expression level of the gene for the subject i and x", tags$sub("i"), " is the genotype of the i-th 
-                    subject by using additive coding (e.g. 0 for AA, 1 for AC, and 2 for CC; A is major allele and C is minor allele). ")),
-            # HTML(paste0("β", tags$sub("1")," is the slope of the regression line and can be 
-            #         estimated with the following distribution under the alternative hypothesis:")),
-            # tags$br(),
-            # helpText(" $$\\text{the estimate of the slope } \\hat{\\beta_1} \\text{ ~ } N(\\beta_1, \\frac{\\sigma^2}{( (n-1) \\sigma_x^2)})
-            #          \\text{ and the estimate of the intercept } \\hat{\\beta_0} = \\bar{y} - \\hat{\\beta_1} \\bar{x}$$"),
-            # helpText("$$\\text{where } \\bar{y} \\text{ is the mean of gene expression, } \\bar{x} \\text{ is the mean of genotype, }$$"),
-            # helpText("$$\\sigma_{\\epsilon}^2 = \\sigma^2 - \\beta_1^2 \\sigma_x^2, \\sigma^2 \\text{ is the variance of the outcome, } \\sigma_x^2 
-            #          \\text{ is the variance of predictor, and } \\sigma_{\\epsilon}^2 \\text{ is the variance of the random error.}$$"),
-            
+            HTML(paste0("where y", tags$sub("i"), " is the expression level of the gene for the subject i and x", tags$sub("i"), " is
+                    the genotype of the i-th subject by using additive coding (e.g. 0 for AA, 1 for AC, and 2 for CC; A is major 
+                    allele and C is minor allele), σ is the standard deviation of random error, and σ<sub>y</sub>
+                    is the standard deviation of the outcome y<sub>i</sub>. ")),
+            tags$br(),
+            tags$br(),
             paste0("We can derive the power calculation formula as: "),
             helpText("$$power = 1 - T_{n-2, \\lambda}[t_{n-2}(\\alpha/2)] + T_{n-2, \\lambda}[-t_{n-2}(\\alpha/2)]$$"),
             HTML(paste0("where T", tags$sub("n−2,λ"), "(a) is the value at a of the cumulative distribution function of non-central t distribution with (n − 2)
                     degrees of freedom and non-centrality parameter λ. λ can be written as: ")),
             helpText("$$ \\lambda = \\frac{\\beta_1}{\\sqrt{(\\sigma_y^2 - \\beta_1^2 2pq) / [(n-1)2pq]}} $$"),
             paste0("p is the minor allele frequency (MAF) and q = 1-p."),
-            # helpText("$$\\text{The unstandardized effect size as } \\beta_1", "\\text{, and
-            #                 the standardized effect size equal to } \\frac{\\beta_1}{\\tau} \\text{, where }\\tau = \\frac{\\sigma}{\\sigma_x} \\text{ is the
-            #                 standard deviation of random error}$$"),
-            # helpText("$$\\text{ normalized by the standard deviation of predictor}.$$"),
             
             tags$br(),
             
@@ -189,32 +174,33 @@ function(input, output, session) {
                     characterize the association between genotype and gene expression:"),
             helpText(" $$y_{ij} = \\beta_{0i} + \\beta_1  x_i + \\epsilon_{ij}$$"),
             helpText(" $$\\beta_{0i} \\text{ ~ } N(\\beta_0, \\sigma^2_{\\beta})$$ "),
-            helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2_{\\epsilon})$$"),
+            helpText(" $$\\epsilon_{ij} \\text{ ~ } N(0, \\sigma^2)$$"),
             helpText("$$i = 1 ... n$$"),
             helpText("$$j = 1 ... m$$"),
             HTML(paste0("n is the number of subjects, m is the number of cells per subjectct, y", tags$sub("ij")," is 
-                        the gene expression level for the j-th cell of the i-th subject, x", tags$sub("i"),"is the genotype for 
+                        the gene expression level for the j-th cell of the i-th subject, x", tags$sub("i")," is the genotype for 
                         the i-th subject using additive coding. That is, x", tags$sub("i")," = 0 indicates the i-th subject is
                         a wildtype homozygote, x", tags$sub("i")," = 1 indicates the i-th subject is a heterozygote, and x", 
-                        tags$sub("i")," = 2 indicates the i-th subject is a mutation homozygote.")),
+                        tags$sub("i")," = 2 indicates the i-th subject is a mutation homozygote, and σ<sub>y</sub>
+                        is the standard deviation of the outcome y<sub>ij</sub>.")),
+            tags$br(),
+            tags$br(),
             paste0("For a given SNP, we assume Hardy-Weinberg Equilibrium and denote the minor allele frequency of the SNP
-                as θ. We can derive the power calculation formula is:"),
+                as p. The power calculation formula is:"),
             helpText("$$power = 1 - \\Phi(z_{\\alpha*/2} - ab) + \\Phi(-z_{\\alpha*/2} - ab)$$"),
             helpText("$$\\text{where } a=\\frac{\\sqrt{2p(1-p)}}{\\sigma_y} \\text{ and } b = \\frac{\\beta_1 \\sqrt{m(n-1)}}{\\sqrt{1+(m-1)\\rho}}$$"),
             HTML(paste0("z",tags$sub("α∗/2"), " is the upper 100α∗/2 percentile of the standard normal distribution,
                         α∗ = α/nTests, nTests is the number of (SNP, gene) pairs, ρ is the intraclass correlation,.")),
             
-            # helpText("$$\\text{We define the unstandardized effect size as } \\beta_1", "\\text{, and
-            #                 the standardized effect size equal to } \\frac{\\beta_1}{\\tau} \\text{, where }\\tau = \\frac{\\sigma_{\\epsilon}}{\\sigma_x} \\text{ is the
-            #                 standard deviation of random error}$$"),
-            # helpText("$$\\text{ normalized by the standard deviation of predictor}.$$"),
             tags$br(),
             tags$br(),
             
             tags$b("References"),
             tags$br(),
             
-            paste0("O'Brien RG Muller KE. Unified power analysis for t-tests through multivariate hypotheses. Applied Analysis of Variance in the Behavioral Sciences, 297–344, 1993. "),
+            paste0("O'Brien, R. G., & Muller, K. E. (1993). Unified power analysis for t-tests through multivariate hypotheses.
+                   In L. K. Edwards (Ed.), Statistics: Textbooks and monographs, Vol. 137. Applied analysis of variance in 
+                   behavioral science (p. 297–344). Marcel Dekker."),
             tags$br(),
             paste0("The GTEx Consortium. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013."),
             tags$br(),
@@ -225,9 +211,9 @@ function(input, output, session) {
                     Xianjun Dong and Weiliang Qiu."),
             tags$br(),
             
-            paste0("Thank you very much for using our power calculator for bulk tissue 
-                   and single-cell eQTL analysis! Please let us know what do you think."),
-            tags$a("Click here!", href = "https://gitreports.com/issue/bwh-bioinformatics-hub/Rshiny_PowerAnalysis"),
+            paste0("Thank you very much for using our power calculators for bulk tissue 
+                   and single-cell eQTL analysis! Please let us know what do you think by "),
+            tags$a("clicking here!", href = "https://gitreports.com/issue/bwh-bioinformatics-hub/Rshiny_PowerAnalysis", target="_blank"),
             tags$br(),
             tags$br(),
             
@@ -236,6 +222,13 @@ function(input, output, session) {
                     sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
             tags$br(),
             tags$br(),
+            
+            tags$h4("Disclaimer"),
+            tags$a(href="https://bioinformatics.bwh.harvard.edu/", "Genomics and Bioinformatics Hub ", target='_blank'),
+            paste0(" cannot and will not be held legally, financially, or medically responsible for decisions made using its calculators, equations, content, and algorithms."),
+            tags$br(),
+            tags$br(),
+            
         )
     })
     
@@ -257,7 +250,7 @@ function(input, output, session) {
     output$cell <- renderPlot({
         xrange <- range(mafVec()*100)
         yrange <- c(0:1)
-        colors <- hcl.colors(sizeLen.data(),"Set 2")
+        colors <- hcl.colors(sizeLen1.data(),"Set 2")
         par(mar = c(5, 5, 1, 2), cex.lab = 1.5)
         
         # treating each cell independantly 
@@ -294,7 +287,7 @@ function(input, output, session) {
             
             xrange <- range(mafVec()*100)
             yrange <- c(0:1)
-            colors <- hcl.colors(sizeLen.data(),"Set 2")
+            colors <- hcl.colors(sizeLen1.data(),"Set 2")
             par(mar = c(5, 5, 1, 2), cex.lab = 1.5)
             
             # treating each cell independantly 
@@ -308,7 +301,7 @@ function(input, output, session) {
             abline(v=0, h=seq(0,1,.1), lty=2, col="grey89")
             abline(h=0, v=c(1:10), lty=2,col="grey89")
             abline(h=power_sc, lty=2, lwd = 1.5, col = 1)
-            text(mafVec()[1]*100, power_sc,labels = as.character(round(power_sc,2)), cex=1.5, adj=0.5, pos = 1, offset = -1)  #power level
+            text(mafVec()[1]*100, power_sc, labels = as.character(round(power_sc,2)), cex=1.5, adj=0.5, pos = 1, offset = -1)  #power level
 
             # add power curves
             for (i in 1:sizeLen1.data()){
@@ -403,6 +396,9 @@ function(input, output, session) {
         if(input$radio=="One-way unbalanced ANOVA")
         {
             updateNumericInput(session, inputId = "delta1", label  = "Mean difference of gene expression (δ1)", value = input$delta1)
+            updateNumericInput(session, inputId = "sigma1", 
+                               label = "Standard deviation of random error (σ)",
+                               value = input$sigma1, min = 0.001, max = 1, step = 0.001)
             show("delta2")
             output$description2 <- renderUI({
                 tags$div(
@@ -411,28 +407,20 @@ function(input, output, session) {
                     # tags$br(),
                     
                     paste0("The figure above shows the statistical power of an eQTL analysis as a function of the minor 
-                            allele frequency (MAF) with different sample size. Unbalanced one-way ANOVA test was used 
+                            allele frequency (MAF) with different sample sizes. Unbalanced one-way ANOVA test was used 
                             to test the potential nonlinear association of genotype classes to expression level, as Ref.
-                            (GTEx consortium, Nature Genetics, 2013). We model the tansformed expression data (e.g. using
-                            log transformation) as normally distributed with a standard deviation of ", input$sigma1, " (we assume
-                            that each genotype class of subjects have the same standard deviation). This level of noise 
-                            can be based on estimates from previous study or pilot data. "),
-                    # paste0("The effect size depends both on the MAF of the SNPs and the actual log expression change between
-                    #         genotype classes (denoted by δ1 and δ2). In this case, when δ1 = δ2 = δ, δ = ", input$delta1, " and 
-                    #         standard deviation = ", input$sigma1, " is equivalent to detecting a ", input$delta1/input$sigma1,
-                    #         "-fold (", input$delta1/input$sigma1, " = ",  input$delta1, "/", input$sigma1, ") of expression 
-                    #         level chance across the genotype classes. "),
-                    # paste0(" The standardized effect size is ", 
-                    #         input$delta1/input$sigma1," in this example."),
+                            (GTEx consortium, Nature Genetics, 2013). We assume the random errors of preprocessed (e.g.,
+                            log transformed) expression levels follow normal distribution with a standard deviation ",
+                            input$sigma1, " (we assume that each genotype class of subjects have the same standard 
+                            deviation). This level of noise can be based on estimates from previous study or pilot data. "),
+
                     tags$br(),
                     tags$br(),
-                    
-                    paste0("This plot uses the function of ‘powerEQTL.ANOVA’ in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-                    paste0(". More details can be found "),
-                    HTML("<a onclick=","customHref('about')>here</a>"),
+
+                    paste0("More details can be found "),
+                    HTML("<a target='_blank' onclick=","customHref('about')>here</a>"),
                     paste0("and in the online manual of the function ‘powerEQTL.ANOVA’ in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
                     
                     tags$br(),
                 )
@@ -441,6 +429,9 @@ function(input, output, session) {
         else
         {
             updateNumericInput(session, inputId = "delta1", label = "Slope of the regression line (β1)", value = input$delta1)
+            updateNumericInput(session, inputId = "sigma1", 
+                               label = "Standard deviation of gene expression (σy)",
+                               value = input$sigma1, min = 0.001, max = 1, step = 0.001)
             hide("delta2")
             output$description2 <- renderUI({
                 tags$div(
@@ -450,22 +441,19 @@ function(input, output, session) {
                     # tags$br(),
                     
                     paste0("The figure above shows the statistical power of an eQTL analysis as a function of the minor
-                            allele frequency (MAF) with different sample size.  Simple linear regression model was used 
+                            allele frequency (MAF) with different sample sizes.  Simple linear regression model was used 
                             to test the linear association between gene expression and genotype.
                             In this example, we model the expression data as log-normally distributed with a log standard
                             deviation of ", input$sigma1, ". This level of noise can be based on estimates from previous
                             study or pilot data. "),
-                    # paste0(" In this example, the unstandardized effect size as β1 = ", input$delta1,
-                    #         ", and the standardized effect size equal to ", effectSize_t(),"."),
+
                     tags$br(),
                     tags$br(),
-                    
-                    paste0("This plot uses the function of ‘powerEQTL.SLR’ in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-                    paste0(". More details can be found "),
-                    HTML("<a onclick=","customHref('about')>here</a>"),
+
+                    paste0("More details can be found "),
+                    HTML("<a onclick=","customHref('about') formtarget='_blank'>here</a>"),
                     paste0("and in the online manual of the function ‘powerEQTL.SLR’ in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
                     tags$br(),
                     )
             })
@@ -585,7 +573,7 @@ function(input, output, session) {
                 }
             }
             
-            legend(input$pos, title="Sample size (n)", legend = sizeVec.data(),
+            legend(input$pos, title="Sample size (n)", legend = sizeVec1.data(),
                    title.col='black',text.col=colors,cex =1, bty='n', pch = 15, col = colors)
             
             dev.off()
@@ -669,49 +657,53 @@ function(input, output, session) {
         tags$br(),
         
         HTML(paste0("The figure above shows the statistical power of an eQTL analysis as a function of the minor allele
-                    frequency (MAF) with different sample size.  Simple linear mixed effect regression model was used 
+                    frequency (MAF) with different sample sizes. Simple linear mixed effects regression model was used 
                     to characterize the linear association between gene expression and genotype. We assume expression 
                     levels are normally distributed after appropriate pre-processing. In this example, We model the 
                     expression data as log-normally distributed with a log standard deviation of ", input$sigma, " 
                     and an intra-class correlation of ", input$rho, ". This level of noise can be based on estimates 
                     from previous study or pilot data. ")),
                     
-        # paste0("The standardized effect size depends on the MAF of the SNPs, the standard deviation of gene expression, and the slope 
-        # of linear regression (denoted by β).In this case, the unstandardized effect size is β =", input$delta, ", and the standardized effect size 
-        #             equal to ", effectSize_sc(),"."),
-        
         tags$br(),
         tags$br(),  
         
-        paste0("This plot uses function ‘powerEQTL.scRNAseq’ in R package "),
-        tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-        paste0(". More details can be found "),
-        HTML("<a onclick=","customHref('about')>here</a>"),
+        paste0("More details can be found "),
+        HTML("<a target='_blank' onclick=","customHref('about')>here</a>"),
         paste0("and in the online manual of the function ‘powerEQTL.scRNAseq’ in R package "),
-        tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-        tags$br(),
-         
-        
-        # tags$b("References"),
-        # tags$br(),
-        # 
-        # paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
-        #        sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)")
+        tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
+        tags$br()
         )
     })
     
     ## Power calculator for single-cell eQTL
     ## hidden input options
     observeEvent(input$btn_scest, {
-        toggle("sigma_est")
-        toggle("FWER_est")
-        toggle("nTest_est")
-        toggle("rho_est")
-        toggle("m_est")
+        
         if (input$btn_scest %% 2 == 1) {
             txt <- "Less Options"
-        } else {
+            show("rho_est")
+            show("rho_est_t")
+            show("m_est")
+            show("m_est_t")
+            show("sigma_est")
+            show("sigma_est_t")
+            show("FWER_est")
+            show("FWER_est_t")
+            show("nTest_est")
+            show("nTest_est_t")
+        } 
+        else {
             txt <- "More Options"
+            hide("rho_est")
+            hide("rho_est_t")
+            hide("m_est")
+            hide("m_est_t")
+            hide("sigma_est")
+            hide("sigma_est_t")
+            hide("FWER_est")
+            hide("FWER_est_t")
+            hide("nTest_est")
+            hide("nTest_est_t")
         }
         updateActionButton(session, "btn_scest", txt)
     })
@@ -801,6 +793,8 @@ function(input, output, session) {
             nTests = input$nTest_est)
         updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
+        updateSliderInput(session, inputId = "slope_est", label = "Slope of the regression line (β1)",
+                          value = input$slope_est, min = 0.01, max = max(1, input$slope_est*2))
     })
     observeEvent(input$sigma_est,{
         max = powerEQTL.scRNAseq(
@@ -825,6 +819,8 @@ function(input, output, session) {
             nTests = input$nTest_est)
         updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
+        updateSliderInput(session, inputId = "sigma_est", 
+                          value = input$sigma_est, min = 0.01, max = max(10, input$sigma_est*2))
     })
     observeEvent(input$FWER_est,{
         max = powerEQTL.scRNAseq(
@@ -873,6 +869,8 @@ function(input, output, session) {
             nTests = input$nTest_est)
         updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
+        updateSliderInput(session, inputId = "nTest_est", label = "Total number of tests (nTests)",
+                          value = input$nTest_est, min = 0, max = max(10e7, input$nTest_est*2))
     })
     observeEvent(input$rho_est,{
         max = powerEQTL.scRNAseq(
@@ -921,18 +919,24 @@ function(input, output, session) {
             nTests = input$nTest_est)
         updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
+        updateSliderInput(session, inputId = "m_est", 
+                          value = input$m_est, min = 500, max = max(100000, input$m_est*2))
     })
     
     ## Power calculator for tissue eQTL
+
     # Reactive Input Title for delta for different models
     observeEvent(input$radio_test,{
         if(input$radio_test == "One-way unbalanced ANOVA")
         {
             hide("slope_test")
-            if (input$btn_test %% 2 == 1) 
+            hide("slope_test_t")
+            if (input$btn_test %% 2 == 1)
             {
-                toggle("delta1_test")
-                toggle("delta2_test")
+                show("delta1_test")
+                show("delta1_test_t")
+                show("delta2_test")
+                show("delta2_test_t")
             }
             max = powerEQTL.ANOVA(
                 n = NULL,
@@ -951,18 +955,21 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
-            
+            updateSliderInput(session, inputId = "sigma_test", 
+                               label = "Standard deviation of random error (σ)",
+                               value = input$sigma_test, min = 0.001, max = 1, step = 0.001)
             output$Explanation1 <- renderUI({
                 tags$div(
                     tags$br(),
-                    paste0("The table uses function 'powerEQTL.ANOVA' in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-                    paste0(". More details can be found "),
-                    HTML("<a onclick=","customHref('about')>here</a>"),
+                    paste0("* - Minimum number of subjects needed for designated power level."),
+                    tags$br(),
+                    tags$br(),
+                    paste0("More details can be found "),
+                    HTML("<a onclick=","customHref('about'), target='_blank'>here</a>"),
                     paste0("and in the online manual of the function 'powerEQTL.ANOVA' in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
                     tags$br(),
                     tags$br(),
                 )
@@ -971,8 +978,11 @@ function(input, output, session) {
         else
         {
             show("slope_test")
+            show("slope_test_t")
             hide("delta1_test")
+            hide("delta1_test_t")
             hide("delta2_test")
+            hide("delta2_test_t")
             max = powerEQTL.SLR(
                 n = NULL,
                 slope = input$slope_test,
@@ -989,31 +999,24 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
+            updateNumericInput(session, inputId = "sigma_test", 
+                               label = "Standard deviation of gene expression (σy)",
+                               value = input$sigma_test, min = 0.001, max = 1, step = 0.001)
             
             output$Explanation1 <- renderUI({
                 tags$div(
                     tags$br(),
-                    paste0("The table uses function 'powerEQTL.SLR' in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-                    paste0(". More details can be found "),
-                    HTML("<a onclick=","customHref('about')>here</a>"),
+                    paste0("* - Minimum number of subjects needed for designated power level."),
+                    tags$br(),
+                    tags$br(),
+                    paste0("More details can be found "),
+                    HTML("<a onclick=","customHref('about'), target='_blank'>here</a>"),
                     paste0("and in the online manual of the function 'powerEQTL.SLR' in R package "),
-                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+                    tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
                     tags$br(),
                     tags$br(),
-                    
-                    # tags$b("References"),
-                    # tags$br(),
-                    # 
-                    # paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
-                    #    sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
-                    # tags$br(),
-                    # paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
-                    # tags$br(),
-                    # paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
-                    
                 )
             })
             
@@ -1024,19 +1027,42 @@ function(input, output, session) {
     
     ## hidden input options
     observeEvent(input$btn_test, {
-        if(input$radio_test == "One-way unbalanced ANOVA")
-        {
-            toggle("delta1_test")
-            toggle("delta2_test")
-        }
-       
-        toggle("sigma_test")
-        toggle("FWER_test")
-        toggle("nTest_test")
+        
         if (input$btn_test %% 2 == 1) {
             txt <- "Less Options"
-        } else {
+            if(input$radio_test == "One-way unbalanced ANOVA")
+            {
+                show("delta1_test")
+                show("delta1_test_t")
+                show("delta2_test")
+                show("delta2_test_t")
+            }
+            
+            show("sigma_test")
+            show("sigma_test_t")
+            show("FWER_test")
+            show("FWER_test_t")
+            show("nTest_test")
+            show("nTest_test_t")
+            
+        } 
+        else {
             txt <- "More Options"
+            if(input$radio_test == "One-way unbalanced ANOVA")
+            {
+                toggle("delta1_test")
+                toggle("delta1_test_t")
+                toggle("delta2_test")
+                toggle("delta2_test_t")
+            }
+            
+            hide("sigma_test")
+            hide("sigma_test_t")
+            hide("FWER_test")
+            hide("FWER_test_t")
+            hide("nTest_test")
+            hide("nTest_test_t")
+
         }
         updateActionButton(session, "btn_test", txt)
     })
@@ -1062,7 +1088,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
         }
         else
@@ -1083,7 +1109,7 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
         }
     })
@@ -1107,7 +1133,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1128,7 +1154,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1151,8 +1177,10 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "slope_test", label = "Slope of the regression line (β1)",
+                        value = input$slope_test, min = 0.01, max = max(1, input$slope_test*2))
         }
     })
     observeEvent(input$n_test,{
@@ -1204,29 +1232,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
-        }
-        else
-        {
-            max = powerEQTL.SLR(
-                n = NULL,
-                slope = input$slope_test,
-                power = 0.999,
-                sigma.y = input$sigma_test,
-                MAF = input$maf_test,
-                FWER = input$FWER_test,
-                nTests = input$nTest_test)
-            n = powerEQTL.SLR(
-                n = NULL,
-                slope = input$slope_test,
-                power = input$power_test,
-                sigma.y = input$sigma_test, 
-                MAF = input$maf_test, 
-                FWER = input$FWER_test,
-                nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
-                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "delta1_test", label = "Mean difference of gene expression (δ1)",
+                        value = input$delta1_test, min = 0.01, max = max(10, input$delta1_test*2))
         }
     })
     observeEvent(input$delta2_test,{
@@ -1249,29 +1258,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
-        }
-        else
-        {
-            max = powerEQTL.SLR(
-                n = NULL,
-                slope = input$slope_test,
-                power = 0.999,
-                sigma.y = input$sigma_test,
-                MAF = input$maf_test,
-                FWER = input$FWER_test,
-                nTests = input$nTest_test)
-            n = powerEQTL.SLR(
-                n = NULL,
-                slope = input$slope_test,
-                power = input$power_test,
-                sigma.y = input$sigma_test, 
-                MAF = input$maf_test, 
-                FWER = input$FWER_test,
-                nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
-                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "delta2_test", label = "Mean difference of gene expression (δ2)",
+                              value = input$delta2_test, min = 0.01, max = max(10, input$delta2_test*2))
         }
     })
     observeEvent(input$sigma_test,{
@@ -1294,8 +1284,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num ubjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "sigma_test", 
+                              value = input$sigma_test, min = 0.01, max = max(10, input$sigma_test*2))
         }
         else
         {
@@ -1315,8 +1307,10 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "sigma_test", 
+                              value = input$sigma_test, min = 0.01, max = max(10, input$sigma_test*2))
         }
     })
     observeEvent(input$FWER_test,{
@@ -1339,7 +1333,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1360,7 +1354,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1384,8 +1378,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "nTest_test", label = "Total number of tests (nTests)",
+                              value = input$nTest_test, min = 0, max = max(10e7, input$nTest_test*2))
         }
         else
         {
@@ -1405,20 +1401,438 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "nTest_test", label = "Total number of tests (nTests)",
+                              value = input$nTest_test, min = 0, max = max(10e7, input$nTest_test*2))
+        }
+    })
+    
+    ## Update slider and text inputs accordingly
+    # Tissue
+    observeEvent(input$power_test_t,{
+        if(as.numeric(input$power_test_t) != input$power_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'power_test',
+                value = input$power_test_t
+            )
+        }
+        
+        
+    })
+    observeEvent(input$power_test,{
+        if(as.numeric(input$power_test_t) != input$power_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'power_test_t',
+                value = input$power_test
+            )
+            
+        }
+        
+    })
+    observeEvent(input$n_test_t,{
+        if(as.numeric(input$n_test_t) != input$n_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'n_test',
+                value = input$n_test_t
+            )
+        }
+        
+        
+    })
+    observeEvent(input$n_test,{
+        if(as.numeric(input$n_test_t) != input$n_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'n_test_t',
+                value = input$n_test
+            )
+            
+        }
+        
+    })
+    observeEvent(input$maf_test_t,{
+        if(as.numeric(input$maf_test_t) != input$maf_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'maf_test',
+                value = input$maf_test_t
+            )
+        }
+    })
+    observeEvent(input$maf_test,{
+        if(as.numeric(input$maf_test_t) != input$maf_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'maf_test_t',
+                value = input$maf_test
+            )
+            
+        }
+        
+    })
+    observeEvent(input$slope_test_t,{
+        if(as.numeric(input$slope_test_t) != input$slope_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'slope_test',
+                value = input$slope_test_t
+            )
+        }
+    })
+    observeEvent(input$slope_test,{
+        if(as.numeric(input$slope_test_t) != input$slope_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'slope_test_t',
+                value = input$slope_test
+            )
+            
+        }
+        
+    })
+    observeEvent(input$delta1_test_t,{
+        if(as.numeric(input$delta1_test_t) != input$delta1_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'delta1_test',
+                value = input$delta1_test_t
+            )
+        }
+    })
+    observeEvent(input$delta1_test,{
+        if(as.numeric(input$delta1_test_t) != input$delta1_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'delta1_test_t',
+                value = input$delta1_test
+            )
+            
+        }
+        
+    })
+    observeEvent(input$delta2_test_t,{
+        if(as.numeric(input$delta2_test_t) != input$delta2_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'delta2_test',
+                value = input$delta2_test_t
+            )
+        }
+    })
+    observeEvent(input$delta2_test,{
+        if(as.numeric(input$delta2_test_t) != input$delta2_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'delta2_test_t',
+                value = input$delta2_test
+            )
+            
+        }
+    })
+    observeEvent(input$sigma_test_t,{
+        if(as.numeric(input$sigma_test_t) != input$sigma_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'sigma_test',
+                value = input$sigma_test_t
+            )
+        }
+    })
+    observeEvent(input$sigma_test,{
+        if(as.numeric(input$sigma_test_t) != input$sigma_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'sigma_test_t',
+                value = input$sigma_test
+            )
+            
+        }
+    })
+    observeEvent(input$FWER_test_t,{
+        if(as.numeric(input$FWER_test_t) != input$FWER_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'FWER_test',
+                value = input$FWER_test_t
+            )
+        }
+    })
+    observeEvent(input$FWER_test,{
+        if(as.numeric(input$FWER_test_t) != input$FWER_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'FWER_test_t',
+                value = input$FWER_test
+            )
+            
+        }
+    })
+    observeEvent(input$nTest_test_t,{
+        if(as.numeric(input$nTest_test_t) != input$nTest_test)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'nTest_test',
+                value = input$nTest_test_t
+            )
+        }
+    })
+    observeEvent(input$nTest_test,{
+        if(as.numeric(input$nTest_test_t) != input$nTest_test)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'nTest_test_t',
+                value = input$nTest_test
+            )
+            
+        }
+    })
+    # Single cell
+    observeEvent(input$power_est_t,{
+        if(as.numeric(input$power_est_t) != input$power_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'power_est',
+                value = input$power_est_t
+            )
+        }
+        
+        
+    })
+    observeEvent(input$power_est,{
+        if(as.numeric(input$power_est_t) != input$power_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'power_est_t',
+                value = input$power_est
+            )
+            
+        }
+        
+    })
+    observeEvent(input$n_est_t,{
+        if(as.numeric(input$n_est_t) != input$n_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'n_est',
+                value = input$n_est_t
+            )
+        }
+        
+        
+    })
+    observeEvent(input$n_est,{
+        if(as.numeric(input$n_est_t) != input$n_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'n_est_t',
+                value = input$n_est
+            )
+            
+        }
+        
+    })
+    observeEvent(input$maf_est_t,{
+        if(as.numeric(input$maf_est_t) != input$maf_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'maf_est',
+                value = input$maf_est_t
+            )
+        }
+    })
+    observeEvent(input$maf_est,{
+        if(as.numeric(input$maf_est_t) != input$maf_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'maf_est_t',
+                value = input$maf_est
+            )
+            
+        }
+        
+    })
+    observeEvent(input$slope_est_t,{
+        if(as.numeric(input$slope_est_t) != input$slope_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'slope_est',
+                value = input$slope_est_t
+            )
+        }
+    })
+    observeEvent(input$slope_est,{
+        if(as.numeric(input$slope_est_t) != input$slope_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'slope_est_t',
+                value = input$slope_est
+            )
+            
+        }
+        
+    })
+    observeEvent(input$sigma_est_t,{
+        if(as.numeric(input$sigma_est_t) != input$sigma_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'sigma_est',
+                value = input$sigma_est_t
+            )
+        }
+    })
+    observeEvent(input$sigma_est,{
+        if(as.numeric(input$sigma_est_t) != input$sigma_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'sigma_est_t',
+                value = input$sigma_est
+            )
+            
+        }
+    })
+    observeEvent(input$FWER_est_t,{
+        if(as.numeric(input$FWER_est_t) != input$FWER_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'FWER_est',
+                value = input$FWER_est_t
+            )
+        }
+    })
+    observeEvent(input$FWER_est,{
+        if(as.numeric(input$FWER_est_t) != input$FWER_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'FWER_est_t',
+                value = input$FWER_est
+            )
+            
+        }
+    })
+    observeEvent(input$nTest_est_t,{
+        if(as.numeric(input$nTest_est_t) != input$nTest_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'nTest_est',
+                value = input$nTest_est_t
+            )
+        }
+    })
+    observeEvent(input$nTest_est,{
+        if(as.numeric(input$nTest_est_t) != input$nTest_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'nTest_est_t',
+                value = input$nTest_est
+            )
+            
+        }
+    })
+    observeEvent(input$rho_est_t,{
+        if(as.numeric(input$rho_est_t) != input$rho_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'rho_est',
+                value = input$rho_est_t
+            )
+        }
+    })
+    observeEvent(input$rho_est,{
+        if(as.numeric(input$rho_est_t) != input$rho_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'rho_est_t',
+                value = input$rho_est
+            )
+            
+        }
+    })
+    observeEvent(input$m_est_t,{
+        if(as.numeric(input$m_est_t) != input$m_est)
+        {
+            updateSliderInput(
+                session = session,
+                inputId = 'm_est',
+                value = input$m_est_t
+            )
+        }
+    })
+    observeEvent(input$m_est,{
+        if(as.numeric(input$m_est_t) != input$m_est)
+        {
+            updateTextInput(
+                session = session,
+                inputId = 'm_est_t',
+                value = input$m_est
+            )
+            
         }
     })
     
     t_est <- reactive({
+        if (input$btn_test %% 2 == 0) 
+        {
+            if(input$radio_test == "One-way unbalanced ANOVA")
+            {
+                hide("delta1_test")
+                hide("delta1_test_t")
+                hide("delta2_test")
+                hide("delta2_test_t")
+            }
+            
+            hide("sigma_test")
+            hide("sigma_test_t")
+            hide("FWER_test")
+            hide("FWER_test_t")
+            hide("nTest_test")
+            hide("nTest_test_t")
+        }
         if (input$radio_test == "One-way unbalanced ANOVA")
         {
-            tab <- data.frame(c(input$radio_test, input$power_test, 
-                                input$n_test, input$maf_test, 
-                                paste0(input$delta1_test, ", ", input$delta2_test), 
-                                input$sigma_test, input$FWER_est, input$nTest_est))
+            tab <- data.frame(c(input$radio_test, input$power_test_t, 
+                                input$n_test_t, input$maf_test_t, 
+                                paste0(input$delta1_test_t, ", ", input$delta2_test_t), 
+                                input$sigma_test_t, input$FWER_test_t, input$nTest_test_t))
             rownames(tab)<-c("<strong>Model used</strong>", "<strong>Power level</strong>", 
-                             "<strong>Number of subjects needed</strong>",
+                             "<strong>Number of subjects needed *</strong>",
                              "<strong>Minor Allele Frequency (MAF)</strong>", 
                              "<strong>Mean differences of gene expression (δ1;δ2)</strong>",
                              "<strong>Standard deviation of gene expression (σ<sub>y</sub>)</strong>",
@@ -1427,9 +1841,9 @@ function(input, output, session) {
         }
         else
         {
-            tab <- data.frame(c(input$radio_test, input$power_test,
-                                input$n_test, input$maf_test,
-                                 input$slope_test, input$sigma_test, input$FWER_est, input$nTest_est))
+            tab <- data.frame(c(input$radio_test, input$power_test_t,
+                                input$n_test_t, input$maf_test_t,
+                                 input$slope_test_t, input$sigma_test_t, input$FWER_test_t, input$nTest_test_t))
             rownames(tab)<-c("<strong>Model used</strong>", "<strong>Power level</strong>", 
                              "<strong>Number of subjects needed</strong>",
                              "<strong>Minor Allele Frequency (MAF)</strong>", 
@@ -1442,12 +1856,25 @@ function(input, output, session) {
         tab
     })
     sc_est <- reactive({
+        if (input$btn_scest %% 2 == 0)
+        {
+            hide("rho_est")
+            hide("rho_est_t")
+            hide("m_est")
+            hide("m_est_t")
+            hide("sigma_est")
+            hide("sigma_est_t")
+            hide("FWER_est")
+            hide("FWER_est_t")
+            hide("nTest_est")
+            hide("nTest_est_t")
+        }
         tab <- data.frame(c("Simple linear mixed effects model", input$power_est, ceiling(input$n_est),
                             input$maf_est, input$slope_est,
                             input$sigma_est, input$rho_est, input$m_est,
                             input$FWER_est, input$nTest_est))
         rownames(tab)<-c("<strong>Model used</strong>", "<strong>Power level</strong>", 
-                         "<strong>Number of subjects needed</strong>",
+                         "<strong>Number of subjects needed *</strong>",
                          "<strong>Minor Allele Frequency (MAF)</strong>", 
                          "<strong>Slope of the regression line (β1)</strong>",
                          "<strong>Standard deviation of gene expression (σ<sub>y</sub>)</strong>",
@@ -1466,25 +1893,16 @@ function(input, output, session) {
     output$Explanation <- renderUI({
         tags$div(
             tags$br(),
-            paste0("The table uses function 'powerEQTL.scRNAseq' in R package "),
-            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
-            paste0(". More details can be found "),
-            HTML("<a onclick=","customHref('about')>here</a>"),
+            paste0("* - Minimum number of subjects needed for designated power level."),
+            tags$br(),
+            tags$br(),
+            paste0("More details can be found "),
+            HTML("<a onclick=","customHref('about'), target='_blank'>here</a>"),
             paste0("and in the online manual of the function 'powerEQTL.scRNAseq' in R package "),
-            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL"),
+            tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
             tags$br(),
             tags$br(),
-            
-            # tags$b("References"),
-            # tags$br(),
-            # 
-            # paste0("Dong X, Li X, Chang T, Weiss S, and Qiu W. powerEQTL: an R package and R shiny application for calculating 
-            #    sample size and power of bulk tissue and single-cell eQTL analysis. manuscript. (2020)"),
-            # tags$br(),
-            # paste0("Dupont, W.D. and Plummer, W.D.. Power and Sample Size Calculations for Studies Involving Linear Regression. Controlled Clinical Trials. 1998;19:589-601."),
-            # tags$br(),
-            # paste0("Lonsdale J and Thomas J, et al. The Genotype-Tissue Expression (GTEx) project. Nature Genetics, 45:580-585, 2013.")
-            
+
             )
     })
     

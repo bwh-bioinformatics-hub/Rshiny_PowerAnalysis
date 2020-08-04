@@ -8,18 +8,17 @@ fixedPage(
     tags$head(
         tags$link(rel = "stylesheet", type = "text/css", href = "jumbotron-narrow.css"),
         tags$link(rel = "stylesheet", type = "text/css", href = "style.css"),
-        tags$link(rel = "shortcut icon", href = "http://www.humanbraincode.org/img/ico/favicon.png"),
+        tags$link(rel = "shortcut icon", href = "powerEQTL.logo.png"),
         tags$script("src"="func.js")
     ),
     
     tags$div(class="header",
              tags$div(class="row",
                       tags$div(class="col-sm-2",
-                               # tags$a(href="http://www.humanbraincode.org", 
                                       tags$img(src = "powerEQTL.logo.png", width = "180"), style="text-align: center;"),
                       tags$div(class="col-sm-10",
                                tags$p(class="title", style="line-height: 80%;", 
-                                      HTML("Power<font color='red'>eQTL</font>")),
+                                      HTML("power<font color='red'>eQTL</font>")),
                                tags$p(class="title", style="font-size:18px;color:gray;", "An R package and R shiny application for calculating 
                                       sample size and power of bulk tissue and single-cell eQTL analysis"))
              )
@@ -30,7 +29,7 @@ fixedPage(
                  sidebarLayout(
                      sidebarPanel(
                          
-                         textInput(inputId = "myntot", label = "Sample sizes (separated by ',')", 
+                         textInput(inputId = "myntot1", label = "Sample sizes (separated by ',')", 
                                    value = "50, 100, 150, 200, 250, 300"),
                          numericInput(inputId = "sigma1", 
                                       label <- htmltools::doRenderTags(HTML(paste0("Standard deviation of gene expression (σ",tags$sub("y"),")"))),
@@ -74,7 +73,7 @@ fixedPage(
                  sidebarLayout(
                      sidebarPanel(
                          
-                         textInput(inputId = "myntot1", label = "Sample sizes (separated by ',')", 
+                         textInput(inputId = "myntot", label = "Sample sizes (separated by ',')", 
                                    value = "50, 100, 150, 200, 250, 300"),
                          numericInput(inputId = "m", label = "Number of cells from each subject (m)", 
                                       value = 640, min = 0, step = 100),
@@ -117,45 +116,65 @@ fixedPage(
         tabPanel("Calculator for tissue eQTL",
                  sidebarLayout(
                      sidebarPanel(
-                         sliderInput(inputId = "power_test", label = "Desired power level",
-                                     value = 0.8, min = 0.001, max = 1),
-                         sliderInput(inputId = "n_test", label = "Number of subjects needed",
-                                     value = 1114, min = 10, max = 10000),
-                         sliderInput(inputId = "maf_test", label = "Minor allele frequencies (between 0 and 0.5)",
-                                     value = 0.02, min = 0.001, max = 0.5),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "power_test", label = "Desired power level",
+                                                 value = 0.8, min = 0.001, max = 1)),
+                             column(width = 3, textInput(inputId = "power_test_t", label = " ", value = 0.8))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "n_test", label = "Num subjects needed",
+                                                 value = 1114, min = 10, max = 10000)),
+                             column(width = 3, textInput(inputId = "n_test_t", label = " ", value = 1114))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "maf_test", label = "MAF (between 0 and 0.5)",
+                                                 value = 0.02, min = 0.001, max = 0.5)),
+                             column(width = 3, textInput(inputId = "maf_test_t", label = " ", value = 0.02))),
                          
-                         hidden(
-                             sliderInput(inputId = "slope_test", label = "Slope of the regression line (β1)",
-                                         value = 0.2, min = 0.01, max = 1)
-                         ),
-                         
+                         fluidRow(
+                             column(width = 9,
+                                    sliderInput(inputId = "slope_test", label = "Slope of the regression line (β1)",
+                                                value = 0.2, min = 0.01, max = 1)),
+                             column(width = 3, textInput(inputId = "slope_test_t", label = " ", value = 0.2))),
+
                          radioButtons(inputId = "radio_test", label = "Model",
                                       choices = c("One-way unbalanced ANOVA", "Simple linear regression")),
                          
                          actionButton("btn_test", "More Options"),
                          tags$br(),
                          tags$br(),
-                         hidden(
-                             sliderInput(inputId = "delta1_test", label = "Mean difference of gene expression (δ1)",
-                                         value = 0.2, min = 0.01, max = 10),
-                             sliderInput(inputId = "delta2_test", label = "Mean difference of gene expression (δ2)",
-                                         value = 0.2, min = 0.01, max = 10),
-                             sliderInput(inputId = "sigma_test", 
-                                         label <- htmltools::doRenderTags(HTML(paste0("Standard deviation of gene expression (σ",tags$sub("y"),")"))),
-                                         value = 0.2, min = 0.01, max = 10),
-                             sliderInput(inputId = "FWER_test", label = "Family-wise type I error rate (FWER)",
-                                         value = 0.05,min = 0.01, max = 1),
-                             sliderInput(inputId = "nTest_test", label = "Total number of tests (nTests)",
-                                         value = 10e5, min = 0, max = 10e7)
-                             
-                         ),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "delta1_test", label = "Mean difference of gene expression (δ1)",
+                                                 value = 0.2, min = 0.01, max = 10)),
+                             column(width = 3, textInput(inputId = "delta1_test_t", label = " ", value = 0.2))),
+                         fluidRow(
+                             column(width = 9,
+                                 sliderInput(inputId = "delta2_test", label = "Mean difference of gene expression (δ2)",
+                                             value = 0.2, min = 0.01, max = 10)),
+                                 column(width = 3, textInput(inputId = "delta2_test_t", label = " ", value = 0.2))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "sigma_test", 
+                                                 label <- htmltools::doRenderTags(HTML(paste0("Standard deviation of gene expression (σ",tags$sub("y"),")"))),
+                                                 value = 0.2, min = 0.01, max = 10)),
+                             column(width = 3, textInput(inputId = "sigma_test_t", label = " ", value = 0.2))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "FWER_test", label = "Family-wise type I error rate (FWER)",
+                                                 value = 0.05,min = 0.01, max = 1)),
+                             column(width = 3, textInput(inputId = "FWER_test_t", label = " ", value = 0.05))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "nTest_test", label = "Total number of tests (nTests)",
+                                                 value = 10e5, min = 0, max = 10e7)),
+                             column(width = 3, textInput(inputId = "nTest_test_t", label = " ", value = 10e5)))
                          
                      ),
                      mainPanel(
                          htmlOutput("title"),
                          tableOutput("approx"),
-                         # htmlOutput("title1"),
-                         # tableOutput("approx1"),
                          htmlOutput("Explanation1")
                      )
                  )
@@ -163,32 +182,58 @@ fixedPage(
         tabPanel("Calculator for single-cell eQTL",
                  sidebarLayout(
                      sidebarPanel(
-                         
-                         sliderInput(inputId = "power_est", label = "Desired power level",
-                                     value = 0.8, min = 0.001, max = 1),
-                         sliderInput(inputId = "n_est", label = "Number of subjects needed",
-                                     value = 507, min = 10, max = 1000),
-                         sliderInput(inputId = "maf_est", label = "Minor allele frequencies (between 0 and 0.5)",
-                                     value = 0.02, min = 0.001, max = 0.5),
-                         sliderInput(inputId = "slope_est", label = "Slope under alternative hypothesis (β1)",
-                                     value = 0.2, min = 0.01, max = 1),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "power_est", label = "Desired power level",
+                                                 value = 0.8, min = 0.001, max = 1)),
+                             column(width = 3, textInput(inputId = "power_est_t", label = " ", value = 0.8))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "n_est", label = "Number of subjects needed",
+                                                 value = 507, min = 10, max = 1000)),
+                             column(width = 3, textInput(inputId = "n_est_t", label = " ", value = 507))),
+                         fluidRow(
+                             column(width = 9,
+                                     sliderInput(inputId = "maf_est", label = "Minor allele frequency (between 0 and 0.5)",
+                                                 value = 0.02, min = 0.001, max = 0.5)),
+                             column(width = 3, textInput(inputId = "maf_est_t", label = " ", value = 0.02))),
+                         fluidRow(
+                            column(width = 9,
+                                     sliderInput(inputId = "slope_est", label = "Slope under alternative hypothesis (β1)",
+                                                 value = 0.2, min = 0.01, max = 1)),
+                            column(width = 3, textInput(inputId = "slope_est_t", label = " ", value = 0.2))),
                          
                          actionButton("btn_scest", "More Options"),
                          tags$br(),
                          tags$br(),
-                         hidden(
-                             sliderInput(inputId = "sigma_est",
-                                         label <- htmltools::doRenderTags(HTML(paste0("Standard deviation of gene expression (σ",tags$sub("y"),")"))),
-                                         value = 0.2, min = 0.01, max = 10),
-                             sliderInput(inputId = "FWER_est", label = "Family-wise type I error rate (FWER)",
-                                         value = 0.05,min = 0.01, max = 1),
-                             sliderInput(inputId = "nTest_est", label = "Total number of tests (nTests)",
-                                         value = 10e5, min = 0, max = 10e7),
-                             sliderInput(inputId = "rho_est", label = "Intra-class correlation (ρ; range [0, 1])",
-                                         value = 0.5, min = 0, max = 1),
-                             sliderInput(inputId = "m_est", label = "Number of cells from each subject (m)",
-                                         value = 640, min = 500, max = 100000)
-                         ),
+                         # hidden(
+                        fluidRow(
+                            column(width = 9,
+                                     sliderInput(inputId = "sigma_est",
+                                                 label <- htmltools::doRenderTags(HTML(paste0("Standard deviation of gene expression (σ",tags$sub("y"),")"))),
+                                                 value = 0.2, min = 0.01, max = 10)),
+                            column(width = 3, textInput(inputId = "sigma_est_t", label = " ", value = 0.2))),
+                        fluidRow(
+                            column(width = 9,
+                                    sliderInput(inputId = "FWER_est", label = "Family-wise type I error rate (FWER)",
+                                                 value = 0.05,min = 0.01, max = 1)),
+                            column(width = 3, textInput(inputId = "FWER_est_t", label = " ", value = 0.05))),
+                        fluidRow(
+                            column(width = 9,
+                                    sliderInput(inputId = "nTest_est", label = "Total number of tests (nTests)",
+                                                value = 10e5, min = 0, max = 10e7)),
+                            column(width = 3, textInput(inputId = "nTest_est_t", label = " ", value = 10e5))),
+                        fluidRow(
+                            column(width = 9,
+                                    sliderInput(inputId = "rho_est", label = "Intra-class correlation (ρ; range [0, 1])",
+                                                 value = 0.5, min = 0, max = 1)),
+                            column(width = 3, textInput(inputId = "rho_est_t", label = " ", value = 0.5))),
+                        fluidRow(
+                            column(width = 9,
+                                    sliderInput(inputId = "m_est", label = "Number of cells from each subject (m)",
+                                                 value = 640, min = 500, max = 100000)),
+                            column(width = 3, textInput(inputId = "m_est_t", label = " ", value = 640))),
+                         # ),
                          
                      ),
                      mainPanel(
@@ -210,7 +255,7 @@ fixedPage(
              tags$div(class="row",
                       tags$div(class="col-sm-10",
                                tags$p(HTML(paste0("&copy; ", tags$a(href="https://bioinformatics.bwh.harvard.edu/", 
-                                                                           "Genomics and Bioinformatics Hub "), 
+                                                                           "Genomics and Bioinformatics Hub ", target='_blank'), 
                                                   format(Sys.Date(), "%Y"), "")))),
                       tags$div(class="col-sm-2",
                                tags$a(href="http://www.brighamandwomens.org", 

@@ -3,7 +3,7 @@ var customHref = function(tabName) {
     for (var i = 0; i < dropdownList.length; i++) {
         var link = dropdownList[i];
         if(link.getAttribute("data-value") == tabName) {
-            link.click();
+            link.click(formtarget="_blank");
         }
     }
 };
