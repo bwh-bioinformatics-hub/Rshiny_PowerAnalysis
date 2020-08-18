@@ -1,6 +1,7 @@
 library(shiny)
 library(shinyjs)
 library(devtools)
+library(dplyr)
 
 source("./global.R")
 source("./package/ssEQTL.ANOVA.R")
@@ -207,7 +208,7 @@ function(input, output, session) {
             tags$br(),
             
             tags$h4("Developer and Bug Report"),
-            paste0("This R shiny application is developed by Xiaoqi Li (xli778@wisc.edu), under the supervisions of Drs. 
+            paste0("This R shiny application is developed by Xiaoqi Li (xli778 at wisc dot edu), under the supervisions of Drs. 
                     Xianjun Dong and Weiliang Qiu."),
             tags$br(),
             
@@ -744,7 +745,7 @@ function(input, output, session) {
             FWER = input$FWER_est,
             nTests = input$nTest_est)
         updateSliderInput(session, inputId = "power_est", label = "Desired power level",
-                          value = as.numeric(power), min = 0.001, max = 1)
+                          value = as.numeric(power))
     })
     observeEvent(input$maf_est,{
         max = powerEQTL.scRNAseq(
@@ -820,7 +821,7 @@ function(input, output, session) {
         updateSliderInput(session, inputId = "n_est", label = "Number of subjects needed",
                           value = as.numeric(n), max = ceiling(as.numeric(max)))
         updateSliderInput(session, inputId = "sigma_est", 
-                          value = input$sigma_est, min = 0.01, max = max(10, input$sigma_est*2))
+                          value = input$sigma_est, min = 0.01, max = max(1, input$sigma_est*2))
     })
     observeEvent(input$FWER_est,{
         max = powerEQTL.scRNAseq(
@@ -955,7 +956,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "sigma_test", 
                                label = "Standard deviation of random error (σ)",
@@ -963,11 +964,11 @@ function(input, output, session) {
             output$Explanation1 <- renderUI({
                 tags$div(
                     tags$br(),
-                    paste0("* - Minimum number of subjects needed for designated power level."),
+                    paste0("* - Approximate number of subjects needed for designated power level."),
                     tags$br(),
                     tags$br(),
                     paste0("More details can be found "),
-                    HTML("<a onclick=","customHref('about'), target='_blank'>here</a>"),
+                    HTML("<a onclick=","customHref('about')>here</a>"),
                     paste0("and in the online manual of the function 'powerEQTL.ANOVA' in R package "),
                     tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
                     tags$br(),
@@ -999,7 +1000,7 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = as.numeric(n), max = ceiling(as.numeric(max)))
             updateNumericInput(session, inputId = "sigma_test", 
                                label = "Standard deviation of gene expression (σy)",
@@ -1008,11 +1009,11 @@ function(input, output, session) {
             output$Explanation1 <- renderUI({
                 tags$div(
                     tags$br(),
-                    paste0("* - Minimum number of subjects needed for designated power level."),
+                    paste0("* - Approximate number of subjects needed for designated power level."),
                     tags$br(),
                     tags$br(),
                     paste0("More details can be found "),
-                    HTML("<a onclick=","customHref('about'), target='_blank'>here</a>"),
+                    HTML("<a onclick=","customHref('about')>here</a>"),
                     paste0("and in the online manual of the function 'powerEQTL.SLR' in R package "),
                     tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
                     tags$br(),
@@ -1087,16 +1088,15 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
-                              value = as.numeric(n), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+                              value = round(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
         {
             max = powerEQTL.SLR(
                 n = NULL,
                 slope = input$slope_test,
-                power = 0.999,
+                power = 0.9999,
                 sigma.y = input$sigma_test,
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
@@ -1109,8 +1109,8 @@ function(input, output, session) {
                 MAF = input$maf_test,
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
-                              value = as.numeric(n), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+                              value = round(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
     observeEvent(input$maf_test,{
@@ -1133,8 +1133,8 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
-                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+                              value = round(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
         {
@@ -1154,8 +1154,8 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
-                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+                              value = round(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
     observeEvent(input$slope_test,{
@@ -1177,8 +1177,8 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
-                              value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
+                              value = round(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "slope_test", label = "Slope of the regression line (β1)",
                         value = input$slope_test, min = 0.01, max = max(1, input$slope_test*2))
         }
@@ -1195,7 +1195,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             updateSliderInput(session, inputId = "power_test", label = "Desired power level",
-                              value = round(as.numeric(p),2))
+                              value = round(as.numeric(p),3))
         }
         else
         {
@@ -1208,7 +1208,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             updateSliderInput(session, inputId = "power_test", label = "Desired power level",
-                              value = round(as.numeric(p),2))
+                              value = round(as.numeric(p),3))
         }
         
     })
@@ -1232,10 +1232,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "delta1_test", label = "Mean difference of gene expression (δ1)",
-                        value = input$delta1_test, min = 0.01, max = max(10, input$delta1_test*2))
+                        value = input$delta1_test, min = -1, max = max(1, input$delta1_test*2))
         }
     })
     observeEvent(input$delta2_test,{
@@ -1258,10 +1258,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "delta2_test", label = "Mean difference of gene expression (δ2)",
-                              value = input$delta2_test, min = 0.01, max = max(10, input$delta2_test*2))
+                              value = input$delta2_test, min = -1, max = max(1, input$delta2_test*2))
         }
     })
     observeEvent(input$sigma_test,{
@@ -1284,10 +1284,10 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num ubjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "sigma_test", 
-                              value = input$sigma_test, min = 0.01, max = max(10, input$sigma_test*2))
+                              value = input$sigma_test, min = 0.01, max = max(1, input$sigma_test*2))
         }
         else
         {
@@ -1307,10 +1307,10 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "sigma_test", 
-                              value = input$sigma_test, min = 0.01, max = max(10, input$sigma_test*2))
+                              value = input$sigma_test, min = 0.01, max = max(1, input$sigma_test*2))
         }
     })
     observeEvent(input$FWER_test,{
@@ -1333,7 +1333,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
         else
@@ -1354,7 +1354,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
         }
     })
@@ -1378,7 +1378,7 @@ function(input, output, session) {
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
             
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "nTest_test", label = "Total number of tests (nTests)",
                               value = input$nTest_test, min = 0, max = max(10e7, input$nTest_test*2))
@@ -1401,7 +1401,7 @@ function(input, output, session) {
                 MAF = input$maf_test, 
                 FWER = input$FWER_test,
                 nTests = input$nTest_test)
-            updateSliderInput(session, inputId = "n_test", label = "Num subjects needed",
+            updateSliderInput(session, inputId = "n_test", label = "Number of subjects needed",
                               value = ceiling(as.numeric(n)), max = ceiling(as.numeric(max)))
             updateSliderInput(session, inputId = "nTest_test", label = "Total number of tests (nTests)",
                               value = input$nTest_test, min = 0, max = max(10e7, input$nTest_test*2))
@@ -1410,40 +1410,43 @@ function(input, output, session) {
     
     ## Update slider and text inputs accordingly
     # Tissue
-    observeEvent(input$power_test_t,{
-        if(as.numeric(input$power_test_t) != input$power_test)
+    power_test_t <- debounce(reactive(input$power_test_t), 2000)
+    observeEvent(power_test_t(),{
+        if (!is.na(input$power_test_t) && input$power_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'power_test',
-                value = input$power_test_t
-            )
+            if(input$power_test_t != input$power_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'power_test',
+                    value = input$power_test_t
+                )
+            }
         }
-        
-        
-    })
+    }) 
     observeEvent(input$power_test,{
-        if(as.numeric(input$power_test_t) != input$power_test)
+        if(input$power_test_t != input$power_test)
         {
             updateTextInput(
                 session = session,
                 inputId = 'power_test_t',
                 value = input$power_test
             )
-            
         }
-        
     })
-    observeEvent(input$n_test_t,{
-        if(as.numeric(input$n_test_t) != input$n_test)
+    n_test_t <- debounce(reactive(input$n_test_t), 2000)
+    observeEvent(n_test_t(),{
+        if (!is.na(input$n_test_t) && input$n_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'n_test',
-                value = input$n_test_t
-            )
+            if(as.numeric(input$n_test_t) != input$n_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'n_test',
+                    value = input$n_test_t
+                )
+            }
         }
-        
         
     })
     observeEvent(input$n_test,{
@@ -1458,14 +1461,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$maf_test_t,{
-        if(as.numeric(input$maf_test_t) != input$maf_test)
+    maf_test_t <- debounce(reactive(input$maf_test_t), 2000)
+    observeEvent(maf_test_t(),{
+        if (!is.na(input$maf_test_t) && input$maf_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'maf_test',
-                value = input$maf_test_t
-            )
+            if(as.numeric(input$maf_test_t) != input$maf_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'maf_test',
+                    value = input$maf_test_t
+                )
+            }
         }
     })
     observeEvent(input$maf_test,{
@@ -1480,14 +1487,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$slope_test_t,{
-        if(as.numeric(input$slope_test_t) != input$slope_test)
+    slope_test_t <- debounce(reactive(input$slope_test_t), 2000)
+    observeEvent(slope_test_t(),{
+        if (!is.na(input$slope_test_t) && input$slope_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'slope_test',
-                value = input$slope_test_t
-            )
+            if(as.numeric(input$slope_test_t) != input$slope_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'slope_test',
+                    value = input$slope_test_t
+                )
+            }
         }
     })
     observeEvent(input$slope_test,{
@@ -1502,14 +1513,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$delta1_test_t,{
-        if(as.numeric(input$delta1_test_t) != input$delta1_test)
+    delta1_test_t <- debounce(reactive(input$delta1_test_t), 2000)
+    observeEvent(delta1_test_t(),{
+        if (!is.na(input$delta1_test_t) && input$delta1_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'delta1_test',
-                value = input$delta1_test_t
-            )
+            if(as.numeric(input$delta1_test_t) != input$delta1_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'delta1_test',
+                    value = input$delta1_test_t
+                )
+            }
         }
     })
     observeEvent(input$delta1_test,{
@@ -1524,14 +1539,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$delta2_test_t,{
-        if(as.numeric(input$delta2_test_t) != input$delta2_test)
+    delta2_test_t <- debounce(reactive(input$delta2_test_t), 2000)
+    observeEvent(delta2_test_t(),{
+        if (!is.na(input$delta2_test_t) && input$delta2_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'delta2_test',
-                value = input$delta2_test_t
-            )
+            if(as.numeric(input$delta2_test_t) != input$delta2_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'delta2_test',
+                    value = input$delta2_test_t
+                )
+            }
         }
     })
     observeEvent(input$delta2_test,{
@@ -1545,14 +1564,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$sigma_test_t,{
-        if(as.numeric(input$sigma_test_t) != input$sigma_test)
+    sigma_test_t <- debounce(reactive(input$sigma_test_t), 2000)
+    observeEvent(sigma_test_t(),{
+        if (!is.na(input$sigma_test_t) && input$sigma_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'sigma_test',
-                value = input$sigma_test_t
-            )
+            if(as.numeric(input$sigma_test_t) != input$sigma_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'sigma_test',
+                    value = input$sigma_test_t
+                )
+            }
         }
     })
     observeEvent(input$sigma_test,{
@@ -1566,14 +1589,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$FWER_test_t,{
-        if(as.numeric(input$FWER_test_t) != input$FWER_test)
+    FWER_test_t <- debounce(reactive(input$FWER_test_t), 2000)
+    observeEvent(FWER_test_t(),{
+        if (!is.na(input$FWER_test_t) && input$sigma_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'FWER_test',
-                value = input$FWER_test_t
-            )
+            if(as.numeric(input$FWER_test_t) != input$FWER_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'FWER_test',
+                    value = input$FWER_test_t
+                )
+            }
         }
     })
     observeEvent(input$FWER_test,{
@@ -1587,14 +1614,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$nTest_test_t,{
-        if(as.numeric(input$nTest_test_t) != input$nTest_test)
+    nTest_test_t <- debounce(reactive(input$nTest_test_t), 2000)
+    observeEvent(nTest_test_t(),{
+        if (!is.na(input$nTest_test_t) && input$nTest_test_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'nTest_test',
-                value = input$nTest_test_t
-            )
+            if(as.numeric(input$nTest_test_t) != input$nTest_test)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'nTest_test',
+                    value = input$nTest_test_t
+                )
+            }
         }
     })
     observeEvent(input$nTest_test,{
@@ -1609,17 +1640,19 @@ function(input, output, session) {
         }
     })
     # Single cell
+    power_est_t <- debounce(reactive(input$power_est_t), 2000)
     observeEvent(input$power_est_t,{
-        if(as.numeric(input$power_est_t) != input$power_est)
+        if (!is.na(input$power_est_t)  && input$power_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'power_est',
-                value = input$power_est_t
-            )
+            if(as.numeric(input$power_est_t) != input$power_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'power_est',
+                    value = input$power_est_t
+                )
+            }
         }
-        
-        
     })
     observeEvent(input$power_est,{
         if(as.numeric(input$power_est_t) != input$power_est)
@@ -1633,16 +1666,19 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$n_est_t,{
-        if(as.numeric(input$n_est_t) != input$n_est)
+    n_est_t <- debounce(reactive(input$n_est_t), 2000)
+    observeEvent(n_est_t(),{
+        if (!is.na(input$n_est_t) && input$n_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'n_est',
-                value = input$n_est_t
-            )
+            if(as.numeric(input$n_est_t) != input$n_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'n_est',
+                    value = input$n_est_t
+                )
+            }
         }
-        
         
     })
     observeEvent(input$n_est,{
@@ -1657,14 +1693,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$maf_est_t,{
-        if(as.numeric(input$maf_est_t) != input$maf_est)
+    maf_est_t <- debounce(reactive(input$maf_est_t), 2000)
+    observeEvent(maf_est_t(),{
+        if (!is.na(input$maf_est_t) && input$maf_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'maf_est',
-                value = input$maf_est_t
-            )
+            if(as.numeric(input$maf_est_t) != input$maf_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'maf_est',
+                    value = input$maf_est_t
+                )
+            }
         }
     })
     observeEvent(input$maf_est,{
@@ -1679,14 +1719,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$slope_est_t,{
-        if(as.numeric(input$slope_est_t) != input$slope_est)
+    slope_est_t <- debounce(reactive(input$slope_est_t), 2000)
+    observeEvent(slope_est_t(),{
+        if (!is.na(input$slope_est_t) && input$slope_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'slope_est',
-                value = input$slope_est_t
-            )
+            if(as.numeric(input$slope_est_t) != input$slope_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'slope_est',
+                    value = input$slope_est_t
+                )
+            }
         }
     })
     observeEvent(input$slope_est,{
@@ -1701,14 +1745,18 @@ function(input, output, session) {
         }
         
     })
-    observeEvent(input$sigma_est_t,{
-        if(as.numeric(input$sigma_est_t) != input$sigma_est)
+    sigma_est_t <- debounce(reactive(input$sigma_est_t), 2000)
+    observeEvent(sigma_est_t(),{
+        if (!is.na(input$sigma_est_t) && input$sigma_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'sigma_est',
-                value = input$sigma_est_t
-            )
+            if(as.numeric(input$sigma_est_t) != input$sigma_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'sigma_est',
+                    value = input$sigma_est_t
+                )
+            }
         }
     })
     observeEvent(input$sigma_est,{
@@ -1722,14 +1770,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$FWER_est_t,{
-        if(as.numeric(input$FWER_est_t) != input$FWER_est)
+    FWER_est_t <- debounce(reactive(input$FWER_est_t), 2000)
+    observeEvent(FWER_est_t(),{
+        if (!is.na(input$FWER_est_t) && input$FWER_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'FWER_est',
-                value = input$FWER_est_t
-            )
+            if(as.numeric(input$FWER_est_t) != input$FWER_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'FWER_est',
+                    value = input$FWER_est_t
+                )
+            }
         }
     })
     observeEvent(input$FWER_est,{
@@ -1743,14 +1795,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$nTest_est_t,{
-        if(as.numeric(input$nTest_est_t) != input$nTest_est)
+    nTest_est_t <- debounce(reactive(input$nTest_est_t), 2000)
+    observeEvent(nTest_est_t(),{
+        if (!is.na(input$nTest_est_t) && input$nTest_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'nTest_est',
-                value = input$nTest_est_t
-            )
+            if(as.numeric(input$nTest_est_t) != input$nTest_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'nTest_est',
+                    value = input$nTest_est_t
+                )
+            }
         }
     })
     observeEvent(input$nTest_est,{
@@ -1764,14 +1820,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$rho_est_t,{
-        if(as.numeric(input$rho_est_t) != input$rho_est)
+    rho_est_t <- debounce(reactive(input$rho_est_t), 2000)
+    observeEvent(rho_est_t(),{
+        if (!is.na(input$rho_est_t) && input$rho_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'rho_est',
-                value = input$rho_est_t
-            )
+            if(as.numeric(input$rho_est_t) != input$rho_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'rho_est',
+                    value = input$rho_est_t
+                )
+            }
         }
     })
     observeEvent(input$rho_est,{
@@ -1785,14 +1845,18 @@ function(input, output, session) {
             
         }
     })
-    observeEvent(input$m_est_t,{
-        if(as.numeric(input$m_est_t) != input$m_est)
+    m_est_t <- debounce(reactive(input$m_est_t), 2000)
+    observeEvent(m_est_t(),{
+        if (!is.na(input$m_est_t) && input$m_est_t != 0)
         {
-            updateSliderInput(
-                session = session,
-                inputId = 'm_est',
-                value = input$m_est_t
-            )
+            if(as.numeric(input$m_est_t) != input$m_est)
+            {
+                updateSliderInput(
+                    session = session,
+                    inputId = 'm_est',
+                    value = input$m_est_t
+                )
+            }
         }
     })
     observeEvent(input$m_est,{
@@ -1828,7 +1892,7 @@ function(input, output, session) {
         if (input$radio_test == "One-way unbalanced ANOVA")
         {
             tab <- data.frame(c(input$radio_test, input$power_test_t, 
-                                input$n_test_t, input$maf_test_t, 
+                                input$n_test, input$maf_test_t, 
                                 paste0(input$delta1_test_t, ", ", input$delta2_test_t), 
                                 input$sigma_test_t, input$FWER_test_t, input$nTest_test_t))
             rownames(tab)<-c("<strong>Model used</strong>", "<strong>Power level</strong>", 
@@ -1842,7 +1906,7 @@ function(input, output, session) {
         else
         {
             tab <- data.frame(c(input$radio_test, input$power_test_t,
-                                input$n_test_t, input$maf_test_t,
+                                input$n_test, input$maf_test_t,
                                  input$slope_test_t, input$sigma_test_t, input$FWER_test_t, input$nTest_test_t))
             rownames(tab)<-c("<strong>Model used</strong>", "<strong>Power level</strong>", 
                              "<strong>Number of subjects needed</strong>",
@@ -1860,8 +1924,6 @@ function(input, output, session) {
         {
             hide("rho_est")
             hide("rho_est_t")
-            hide("m_est")
-            hide("m_est_t")
             hide("sigma_est")
             hide("sigma_est_t")
             hide("FWER_est")
@@ -1869,10 +1931,10 @@ function(input, output, session) {
             hide("nTest_est")
             hide("nTest_est_t")
         }
-        tab <- data.frame(c("Simple linear mixed effects model", input$power_est, ceiling(input$n_est),
-                            input$maf_est, input$slope_est,
-                            input$sigma_est, input$rho_est, input$m_est,
-                            input$FWER_est, input$nTest_est))
+        tab <- data.frame(c("Simple linear mixed effects model", input$power_est_t, ceiling(input$n_est),
+                            input$maf_est_t, input$slope_est_t,
+                            input$sigma_est_t, input$rho_est_t, input$m_est_t,
+                            input$FWER_est_t, input$nTest_est_t))
         rownames(tab)<-c("<strong>Model used</strong>", "<strong>Power level</strong>", 
                          "<strong>Number of subjects needed *</strong>",
                          "<strong>Minor Allele Frequency (MAF)</strong>", 
@@ -1893,11 +1955,11 @@ function(input, output, session) {
     output$Explanation <- renderUI({
         tags$div(
             tags$br(),
-            paste0("* - Minimum number of subjects needed for designated power level."),
+            paste0("* - Approximate number of subjects needed for designated power level."),
             tags$br(),
             tags$br(),
             paste0("More details can be found "),
-            HTML("<a onclick=","customHref('about'), target='_blank'>here</a>"),
+            HTML("<a onclick=","customHref('about')>here</a>"),
             paste0("and in the online manual of the function 'powerEQTL.scRNAseq' in R package "),
             tags$a( "‘powerEQTL’", href = "https://CRAN.R-project.org/package=powerEQTL", target="_blank"),
             tags$br(),
